@@ -29,7 +29,7 @@ satu layar tanpa perlu digulir.
 
 Tingkat kesulitan (mudah/sedang/sulit) berlaku untuk keempatnya.
 
-## Empat keluarga bentuk
+## Delapan keluarga bentuk
 
 Bentuknya **dibangkitkan, bukan digambar manual**, dari sebuah nomor benih.
 
@@ -39,8 +39,13 @@ Bentuknya **dibangkitkan, bukan digambar manual**, dari sebuah nomor benih.
 | **Bangun datar + penanda** | segitiga/persegi/segilima/segienam beraturan, ditambah 2–4 penanda: titik isi atau kosong, tali busur, jari-jari, takik tepi, segitiga kecil, panah dalam | bangun datar yang "diberi tanda" pada tempat tertentu |
 | **Kisi titik & penghubung** | kisi 3×3 atau 4×4; 4–6 titiknya dihubungkan satu jalur (kadang tertutup), sisanya jadi titik isi/kosong lepas | jalur bersudut dengan titik-titik penyerta |
 | **Panah, sirip & kait** | 3–5 batang memancar dari pusat, sebagian bersiku, ujungnya mata panah / kait / polos; kadang berinti segitiga, persegi, atau lingkaran | susunan panah yang arahnya harus dibaca |
+| **Pita zigzag menyilang** | 2–3 garis patah panjang (3–5 titik) yang melintasi gambar pada sudut berbeda, kadang ditambah satu titik | yang ditelusuri arah lipatan tiap pita, bukan urutan besar-kecilnya |
+| **Tulang & gigi sisir** | satu tulang punggung dengan 3–5 gigi yang panjang dan kemiringannya berbeda-beda, sesekali satu gigi menyeberang sisi | bentuk seperti sisir; panjang gigi yang tidak seragam itulah yang membuatnya kiral |
+| **Blok bertumpuk** | 2–4 segi empat tertutup pada sudut dan letak berbeda yang bertindihan sebagian | berbeda dari bersarang: yang dibaca letak tumpukannya |
+| **Lingkaran & tali silang** | satu lingkaran besar, 3–4 tali busur berujung di kelilingnya, plus 1–2 titik di dalam | satu-satunya keluarga bergaris lengkung, jadi sekilas langsung berbeda dari tujuh lainnya |
 
-Pilih *Campur* agar keluarganya berganti-ganti antar soal.
+Pilih *Campur* agar keluarganya berganti-ganti antar soal. Diukur pada 400 bentuk,
+kedelapan keluarga muncul 10,5%–16,0% — merata dalam batas kewajaran acak.
 
 ## Jaminan kebenaran
 
@@ -84,7 +89,7 @@ membuat pengecoh cermin ikut benar dan soalnya berkunci ganda.
 
 Kiral saja ternyata belum cukup. Diukur pada 1.200 bentuk mentah, syarat kiral hanya
 menolak **0,3%** — sedangkan syarat berikutnya, *cerminnya harus berbeda cukup jauh*,
-menolak **17,1%** dan menjadi sebab penolakan terbanyak dari seluruh penyaring.
+menolak **10,2%** dan menjadi sebab penolakan terbanyak dari seluruh penyaring.
 Bentuk-bentuk itu memang kiral secara matematis, tetapi bayangan cerminnya nyaris
 menumpuk pada aslinya; pengecoh cermin darinya berubah menjadi adu ketelitian
 mengukur, bukan adu mengenali pola.
@@ -105,31 +110,31 @@ pertamanya bukan soal keindahan melainkan syarat agar soalnya sah:
 | beda terhadap bayangan cerminnya | ≥ 0,045 | cermin yang nyaris kembar, sehingga pengecoh cermin jadi adu ketelitian mengukur |
 
 Diukur pada 400 bentuk acak: seluruhnya berorde simetri 1 dan kiral, rata-rata butuh
-**1,46 percobaan** sampai lolos, dan **tidak satu pun** jatuh ke bentuk cadangan.
-Biayanya 2,3 ms per bentuk.
+**1,27 percobaan** sampai lolos, dan **tidak satu pun** jatuh ke bentuk cadangan.
+Biayanya 2,6 ms per bentuk.
 
-Tingkat penolakan berbeda antar keluarga (per 300 bentuk yang jadi): kisi 1,09
-percobaan, sarang 1,40, panah 1,75, datar 2,09.
+Tingkat penolakan berbeda antar keluarga (per 60 bentuk yang jadi): zigzag 1,05
+percobaan, kisi 1,10, blok 1,12, sisir 1,18, silang 1,20, sarang 1,52, panah 1,60,
+datar 2,22.
 
 ### Syarat mana yang benar-benar menggigit
 
-Diukur pada 1.200 bentuk **mentah** (sebelum disaring); 33,2% ditolak:
+Diukur pada 1.200 bentuk **mentah** (sebelum disaring); 21,7% ditolak:
 
 | Syarat | Menolak |
 |---|---|
-| cerminnya nyaris kembar | 17,1% |
-| garisnya terlalu sedikit | 8,1% |
-| dua unsur berhimpit | 7,8% |
-| ada ruas sehalus rambut | 3,9% |
-| bentuknya gepeng | 0,4% |
+| cerminnya nyaris kembar | 10,2% |
+| dua unsur berhimpit | 6,9% |
+| garisnya terlalu sedikit | 3,8% |
+| ada ruas sehalus rambut | 2,0% |
+| bentuknya gepeng | 0,7% |
 | tidak kiral | 0,3% |
-| orde simetri bukan 1 | **0%** |
+| orde simetri bukan 1 | 0,1% |
 
-Syarat orde simetri belum pernah sekali pun menolak bentuk: pembangkitnya memakai
-sudut acak yang praktis tak pernah menghasilkan bentuk simetri putar. Syarat itu tetap
-dipertahankan karena ia menjaga sifat yang membuat soalnya sah, bukan karena ia sering
-dipakai — dan kalau suatu saat keluarga bentuk baru ditambahkan, syarat itulah yang
-menangkapnya.
+Syarat orde simetri itu contoh bagus: selama generatornya hanya punya empat keluarga,
+ia **tidak pernah sekali pun** menolak bentuk, dan tampak seperti aturan yang mubazir.
+Begitu empat keluarga baru ditambahkan, ia langsung menangkap kasusnya. Aturan yang
+menjaga sifat pokok memang layak dipertahankan meski jarang berbunyi.
 
 `Families.mentah()` disediakan khusus untuk pengukuran ini; `bangkitkan()` membuang
 bentuk yang gagal sehingga dari luar sebab penolakannya tidak terlihat sama sekali.
@@ -167,10 +172,42 @@ gambar**:
 | `geserUnsur` | satu unsur bergeser dari kedudukannya |
 | `cerminUnsur` | hanya satu unsur yang tercermin |
 
-Tingkat kesulitan **tidak mengubah apa yang dijamin benar** — ia hanya mengubah urutan
-prioritas kesembilan strategi itu dan besar sudut putarnya (mudah: kelipatan 90°;
+Tingkat kesulitan **tidak mengubah apa yang dijamin benar** — ia mengubah strategi mana
+yang dipakai, urutan prioritasnya, dan besar sudut putarnya (mudah: kelipatan 90°;
 sedang: kelipatan 45°; sulit: 45/135/225/315°, yang tidak menyisakan satu pun sisi
 mendatar).
+
+### Tingkat sulit: kelima opsi memakai potongan yang sama persis
+
+Kelima opsi bisa saja "berbeda" tanpa satu pun penjawab perlu membayangkan putaran.
+Kalau sebuah pengecoh punya unsur lebih banyak, unsur yang ukurannya berubah, atau
+titik yang tadinya hitam menjadi kosong, ia bisa dicoret **sekilas** — cukup menghitung
+atau membandingkan ukuran. Soalnya berhenti menguji penalaran ruang.
+
+Karena itu kesembilan strategi dibagi dua menurut apakah ia mengubah **profil** bentuk,
+yaitu segala hal yang terbaca tanpa memutar gambar sedikit pun: daftar unsurnya (jenis,
+tertutup atau tidak, terisi atau kosong, berkepala atau tidak, jumlah titik, panjang
+garis) dan jangkauannya. Semuanya tidak berubah saat gambar diputar.
+
+| | strategi | mengubah daftar unsur |
+|---|---|---|
+| **kaku** | cermin, putarUnsur, putarSendiri, geserUnsur, cerminUnsur | **0%** |
+| longgar | skalaUnsur, hapusUnsur, tambahUnsur, isiUnsur | **100%** |
+
+Angka itu diukur, bukan diasumsikan: 400 percobaan per strategi.
+
+Pada tingkat **sulit** hanya strategi kaku yang dipakai, dan tiap pengecoh masih diuji
+lagi secara geometri — profilnya wajib sama dengan gambar acuan (jangkauan boleh beda
+paling banyak 6%). Hasilnya kelima opsi memakai potongan yang sama persis; yang berbeda
+hanya susunannya, dan satu-satunya jalan memilih adalah benar-benar membayangkan
+putarannya. Diperiksa pada 128 soal sulit: **640 dari 640 opsi** berprofil sama.
+
+Pada **mudah** dan **sedang**, pengecoh yang mudah dicoret justru yang diinginkan —
+itulah yang membedakan ketiga tingkat. Diperiksa pada 64 soal mudah: 62 di antaranya
+memang punya minimal satu pengecoh semacam itu.
+
+Pemeriksaannya dilakukan dari geometri, bukan dari daftar `CACAT_KAKU`. Kalau kelak ada
+strategi baru yang keliru digolongkan kaku, aturan itu tetap menangkapnya.
 
 ### Yang dibuang: unsur rangka
 
@@ -222,9 +259,46 @@ Unsurnya disebut dengan kata ("bingkai terluar", "titik penanda", "batang berpan
 bukan nomor urut. Nama itu murni keterangan: tidak satu pun pembanding melihatnya,
 jadi dua unsur bernama beda tetap dinyatakan sama bila goresannya sama.
 
-Halaman pembahasan menampilkan **gambar acuan bersanding dengan opsi kunci**, dengan
-sudut putarnya tertulis di antara keduanya — bukti yang bisa ditelusuri sendiri di
-gambar.
+### Gambar pembahasan kesesuaian: tiga baris
+
+Kalimat "diputar 225 derajat" hanya bisa dipercaya, tidak bisa diperiksa: pada gambar
+garis polos tidak ada apa pun yang bisa ditelusuri mata dari gambar acuan ke kuncinya.
+Karena itu halaman pembahasan kesesuaian memuat tiga baris.
+
+**1. Padanan unsur.** Gambar acuan bersanding dengan opsi kunci, dan unsur yang
+bersesuaian diberi **warna dan nomor yang sama** pada keduanya. Pembaca cukup mengikuti
+satu warna untuk melihat ke mana unsur itu berpindah — dan melihat sendiri bahwa
+semuanya berpindah bersama-sama. Padanannya tidak perlu dicari-cari: `Figure.putar()`
+mempertahankan urutan unsur, jadi unsur ke-*i* pada acuan pasti unsur ke-*i* pada
+kuncinya.
+
+Nada warnanya sengaja **tua**, kebalikan dari generator jaring-jaring yang mewarnai
+bidang dengan nada muda. Di sini yang diwarnai adalah garis setebal satu sampai dua
+piksel, dan warna muda pada garis setipis itu hilang saat dicetak.
+
+Bulatan nomor diletakkan **di luar** unsurnya dengan garis penunjuk pendek yang
+berujung di dalam unsur tersebut. Ditaruh di dalam, bulatan sebesar itu menutupi garis
+yang justru harus dibaca. Penempatnya mencoba dua belas arah di sekeliling pusat unsur
+dan memilih yang paling jauh dari garis mana pun DAN dari bulatan yang sudah terpasang
+— tanpa itu dua nomor bisa memperebutkan celah yang sama pada gambar yang padat.
+
+**2. Tahap putaran.** Gambar acuan ditampilkan pada tiga sudut antara sampai tiba di
+sudut kuncinya (0° → 105° → 210° → 315°, misalnya), bingkai terakhir bertanda
+"= opsi A". Putarannya jadi bisa **dilihat terjadi**, bukan sekadar dibaca angkanya.
+
+**3. Peta pengecoh.** Kelima opsi kecil-kecil, unsur yang cacat diwarnai **merah** dan
+digemukkan, kuncinya berbingkai hijau. Pembahasan menulis "letak bingkai terluar
+berpindah"; tanpa peta ini pembaca harus mencari sendiri bingkai mana yang dimaksud di
+antara lima gambar yang mirip.
+
+Ketiga baris menumpuk ke bawah, dan itu justru pas dengan halaman PDF-nya yang
+menyediakan kolom gambar selebar 480 pt namun setinggi 610 pt. Skalanya dihitung ulang
+per baris menurut ukuran kotaknya sendiri — memakai satu skala untuk semua baris
+membuat gambar tumpah keluar kotak pada baris yang kotaknya lebih kecil. Perbandingan
+antar opsi tetap adil karena yang penting satu skala **di dalam** satu baris.
+
+Ketiga submateri lain memakai susunan yang lebih ringkas: gambar acuannya bersanding
+dengan opsi kunci, dengan sudut atau langkah polanya tertulis di antara keduanya.
 
 ## Skala dipakai bersama
 
@@ -310,11 +384,11 @@ Pilihan terakhir tersimpan otomatis di peramban.
 | | |
 |---|---|
 | satu bentuk | 2,3 ms |
-| satu soal (kesesuaian) | 18–22 ms |
+| satu soal (kesesuaian) | 21–25 ms |
 | satu soal (tipe lain) | 4–7 ms |
 | paket 100 soal campuran | 0,97 detik |
 | penyusunan SVG 100 soal | 0,92 detik (11,5 KB SVG per soal) |
-| PDF | ≈ 131 KB per soal |
+| PDF | ≈ 162 KB per soal |
 
 Soal kesesuaian paling mahal karena ia sendiri yang mencari empat pengecoh lewat
 pengukuran beda bentuk; tipe lain sebagian pengecohnya sudah tertentu dari polanya.
@@ -326,8 +400,8 @@ index.html          antarmuka (tata letak 3 kolom, satu layar)
 css/style.css       tampilan + aturan cetak
 js/rng.js           pengacak berbenih (mulberry32 + pengaduk splitmix32)
 js/figure.js        model unsur, transformasi, dan PEMBANDING ROTASI yang pasti
-js/families.js      empat keluarga pembangkit bentuk + penyaring keterbacaan
-js/render.js        penggambar SVG (unsur, kotak, deret kotak)
+js/families.js      delapan keluarga pembangkit bentuk + penyaring keterbacaan
+js/render.js        penggambar SVG (unsur, kotak, deret kotak, bulatan bernomor)
 js/sheet.js         tata letak lembar soal — dipakai bersama layar, PDF, dan Word
 js/quiz.js          penyusun soal keempat submateri, pengecoh, audit, pembahasan
 js/raster.js        SVG -> piksel (untuk PDF) dan penyimpan berkas
@@ -354,7 +428,7 @@ node uji/soal.js 12           # soal jadi, diperiksa ulang dari geometrinya
 node uji/periksa-pdf.js contoh-keluaran.pdf
 ```
 
-`uji/soal.js` menjalankan sembilan pemeriksaan atas 720 soal dari seluruh kombinasi
+`uji/soal.js` menjalankan sepuluh pemeriksaan atas 864 soal dari seluruh kombinasi
 submateri × tingkat × keluarga, semuanya **dihitung ulang dari bentuk tiap pilihan**,
 bukan dari catatan penyusunnya:
 
@@ -368,7 +442,10 @@ bukan dari catatan penyusunnya:
    C→kunci, dan sama dengan sudut yang ditulis di pembahasan;
 8. **serial**: keempat langkah antar kotak sebesar delta yang tercatat, diukur setelah
    titik penandanya dilepas;
-9. tidak ada dua opsi yang kalimat alasannya sama.
+9. tidak ada dua opsi yang kalimat alasannya sama;
+10. pada tingkat **sulit**, kelima opsi kesesuaian dan ketidaksamaan berprofil sama —
+    dan sebaliknya, tingkat mudah memang menyediakan pengecoh yang bisa dicoret
+    sekilas, supaya ketiga tingkat itu benar-benar berbeda.
 
 Alat bantu lain:
 
@@ -394,7 +471,7 @@ Berkas keluarannya diperiksa dengan alat di luar penyusunnya sendiri:
 | ukuran halaman | 32/32 berukuran 1440 × 810 pt |
 | kunci per soal | 8/8 punya baris `Jawaban:` |
 | alasan per soal | 8/8 punya empat alasan, 0 pasang yang kembar |
-| .docx dibaca pembaca ZIP .NET | 23 entri, tanpa galat |
+| .docx dibaca pembaca ZIP .NET | 29 entri, tanpa galat |
 | gambar tersemat | 24 (tiga per soal), 0 pasang berukuran sama |
 
 Contohnya tersedia di folder ini:
@@ -403,7 +480,7 @@ Contohnya tersedia di folder ini:
 |---|---|
 | `contoh-keluaran.pdf` | 8 soal campuran, 32 halaman |
 | `contoh-keluaran.docx` | 8 soal yang sama dalam format Word |
-| `contoh-keluaran.html` | 48 soal — keempat submateri × keempat keluarga × ketiga tingkat, lengkap dengan pembahasan dan gambar pembahasannya |
+| `contoh-keluaran.html` | 96 soal — keempat submateri × kedelapan keluarga × ketiga tingkat, lengkap dengan pembahasan dan gambar pembahasannya |
 
 Ketiganya ikut berubah setiap kali generatornya diubah, jadi jangan dijadikan acuan
 tanpa dibuat ulang: `node uji/pratinjau.js contoh-keluaran.html 12000` untuk yang HTML,

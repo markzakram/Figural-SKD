@@ -80,8 +80,36 @@
     // mencolok pada tingkat mudah.
     bedaMinSulit: 0.030,
     bedaMinMudah: 0.075,
+    // Selisih jangkauan pengecoh terhadap kunci yang masih boleh. Gambar yang
+    // ukurannya berubah langsung terlihat berbeda tanpa perlu diputar.
+    jangkauan: 0.06,
     coba: 60          // percobaan mencari satu pengecoh sebelum menyerah
   };
+
+  /**
+   * Strategi yang KAKU: setiap unsur mempertahankan bentuk dan ukurannya persis,
+   * yang berubah hanya letak atau arahnya di dalam gambar.
+   *
+   * Kelima strategi inilah satu-satunya yang dipakai pada tingkat SULIT.
+   * Empat strategi lain (skalaUnsur, hapusUnsur, tambahUnsur, isiUnsur) SELALU
+   * mengubah daftar unsurnya — terukur 100% dari 400 percobaan masing-masing —
+   * sehingga pengecohnya bisa dicoret sekilas: penjawab cukup menghitung unsur
+   * atau membandingkan ukurannya, tanpa membayangkan putaran sama sekali.
+   * Keempatnya tetap dipakai pada tingkat mudah dan sedang, karena di situ
+   * pengecoh yang mudah dicoret memang yang diinginkan.
+   */
+  var CACAT_KAKU = ['cermin', 'putarUnsur', 'putarSendiri', 'geserUnsur', 'cerminUnsur'];
+
+  /**
+   * Tingkat mana yang menuntut kelima opsi berprofil sama.
+   *
+   * Hanya `sulit`. Di situ pengecoh yang jumlah, ukuran, atau isi unsurnya
+   * berbeda tidak dipakai sama sekali, sehingga tidak ada satu pun opsi yang
+   * bisa dicoret sekilas — penjawab wajib membayangkan putarannya. Pada
+   * `mudah` dan `sedang` pengecoh semacam itu justru yang membuat soalnya
+   * lebih mudah, dan memang itulah maksud kedua tingkat tersebut.
+   */
+  function wajibProfilSama(tingkat) { return tingkat === 'sulit'; }
 
   // ------------------------------------------------------------------ bantu
 
@@ -128,6 +156,26 @@
   }
 
   /**
+   * Apakah dua bentuk punya PROFIL yang sama?
+   *
+   * Profil di sini adalah segala hal yang bisa dibaca penjawab TANPA memutar
+   * gambar sedikit pun: daftar unsurnya (jenis, tertutup atau tidak, terisi
+   * atau kosong, berkepala atau tidak, jumlah titik, panjang garis) dan
+   * seberapa jauh gambarnya menjangkau. Semuanya tidak berubah saat gambar
+   * diputar, jadi kalau ada satu saja yang berbeda, pengecohnya bisa dicoret
+   * tanpa membayangkan putaran.
+   *
+   * Inilah syarat yang membuat kelima opsi kesesuaian "hampir mirip": semua
+   * memakai potongan yang sama persis, hanya susunannya yang berbeda — dan
+   * satu-satunya cara memilih adalah benar-benar membayangkan putarannya.
+   */
+  function profilCocok(A, B) {
+    if (F.tandaBentuk(A) !== F.tandaBentuk(B)) return false;
+    var ja = F.jangkauan(A), jb = F.jangkauan(B);
+    return Math.abs(ja - jb) <= AMBANG.jangkauan * Math.max(ja, jb);
+  }
+
+  /**
    * Pengecoh tidak perlu lolos seluruh penyaring bentuk — ia memang sengaja
    * cacat — tetapi tetap harus TERBACA. Yang diperiksa hanya keterbacaannya.
    */
@@ -157,7 +205,7 @@
   function cacatCermin(fig) {
     return {
       fig: F.pusatkan(F.cermin(fig)),
-      jenis: 'cermin',
+      jenis: 'cermin', sorot: -1,
       alasan: 'gambarnya merupakan BAYANGAN CERMIN dari gambar acuan, bukan hasil putaran. ' +
         'Diputar ke sudut mana pun, susunan unsurnya tidak akan pernah bertumpuk tepat ' +
         'dengan gambar acuan karena urutan unsurnya berbalik arah.'
@@ -169,7 +217,7 @@
     var d = a.pilih([40, 55, 70, 90, 110, 130]) * a.tanda();
     return {
       fig: F.pusatkan(F.putarUnsur(fig, idx, d)),
-      jenis: 'putarUnsur', idx: idx,
+      jenis: 'putarUnsur', idx: idx, sorot: idx,
       alasan: 'letak ' + namaUnsur(fig, idx) + ' berpindah terhadap unsur lain — ' +
         'hanya unsur itu yang bergeser mengelilingi pusat, sedangkan pada putaran ' +
         'seluruh unsur bergerak bersama-sama sehingga kedudukan relatifnya tetap.'
@@ -184,7 +232,7 @@
     var d = a.pilih([30, 45, 60, 75, 90]) * a.tanda();
     return {
       fig: F.pusatkan(F.putarUnsurSendiri(fig, idx, d)),
-      jenis: 'putarSendiri', idx: idx,
+      jenis: 'putarSendiri', idx: idx, sorot: idx,
       alasan: 'arah ' + namaUnsur(fig, idx) + ' berubah sedangkan letaknya tetap. ' +
         'Pada putaran yang benar, sudut antara unsur ini dan unsur lain harus tidak berubah.'
     };
@@ -195,7 +243,7 @@
     var s = a.pilih([0.62, 0.72, 1.28, 1.4]);
     return {
       fig: F.pusatkan(F.skalaUnsur(fig, idx, s)),
-      jenis: 'skalaUnsur', idx: idx,
+      jenis: 'skalaUnsur', idx: idx, sorot: idx,
       alasan: 'ukuran ' + namaUnsur(fig, idx) + ' ' + (s < 1 ? 'mengecil' : 'membesar') +
         ' terhadap unsur lain. Putaran tidak mengubah ukuran apa pun, jadi perbandingan ' +
         'ukuran antar unsur seharusnya tetap sama persis.'
@@ -226,7 +274,7 @@
     u.splice(idx, 1);
     return {
       fig: F.pusatkan({ unsur: u, keluarga: fig.keluarga, benih: fig.benih }),
-      jenis: 'hapusUnsur', idx: idx,
+      jenis: 'hapusUnsur', idx: idx, sorot: null,
       alasan: nama + ' hilang, sehingga jumlah unsurnya berkurang satu. ' +
         'Putaran tidak menambah maupun mengurangi unsur.'
     };
@@ -240,7 +288,7 @@
     var u = fig.unsur.concat([tmp.unsur[0]]);
     return {
       fig: F.pusatkan({ unsur: u, keluarga: fig.keluarga, benih: fig.benih }),
-      jenis: 'tambahUnsur', idx: idx,
+      jenis: 'tambahUnsur', idx: idx, sorot: u.length - 1,
       alasan: 'ada satu unsur TAMBAHAN berupa salinan ' + namaUnsur(fig, idx) +
         ', sehingga jumlah unsurnya lebih banyak satu daripada gambar acuan.'
     };
@@ -257,12 +305,21 @@
     var kosong = !h.unsur[idx].isi;
     h.unsur[idx].isi = kosong ? '#111' : null;
     return {
-      fig: h, jenis: 'isiUnsur', idx: idx,
+      fig: h, jenis: 'isiUnsur', idx: idx, sorot: idx,
       alasan: namaUnsur(fig, idx) + ' berubah dari ' + (kosong ? 'kosong menjadi terisi hitam' :
         'terisi hitam menjadi kosong') + '. Putaran tidak mengubah isi sebuah unsur.'
     };
   }
 
+  /**
+   * Geser satu unsur, TETAPI jangan sampai keluar dari jangkauan gambarnya.
+   *
+   * Pada keluarga yang punya bingkai luar — lingkaran pada `silang`, segienam
+   * pada `datar` — tali busur yang digeser sampai menyembul keluar lingkaran
+   * terbaca sebagai gambar rusak, bukan gambar yang susunannya berbeda.
+   * Penggeseran yang melarkan jangkauan lebih dari 8% ditolak, dan pencarian
+   * pengecoh mencoba lagi dengan unsur atau strategi lain.
+   */
   function cacatGeserUnsur(fig, a) {
     var idx = a.bulat(0, fig.unsur.length - 1);
     var jang = F.jangkauan(fig);
@@ -271,8 +328,10 @@
     var u = h.unsur[idx], dx = d * Math.cos(ar), dy = d * Math.sin(ar);
     if (u.jenis === 'bulat') u.pusat = [u.pusat[0] + dx, u.pusat[1] + dy];
     else u.titik = u.titik.map(function (p) { return [p[0] + dx, p[1] + dy]; });
+    h = F.pusatkan(h);
+    if (F.jangkauan(h) > jang * 1.08) return null;
     return {
-      fig: F.pusatkan(h), jenis: 'geserUnsur', idx: idx,
+      fig: h, jenis: 'geserUnsur', idx: idx, sorot: idx,
       alasan: 'letak ' + namaUnsur(fig, idx) + ' bergeser menjauh dari kedudukan semula ' +
         'terhadap unsur lain, padahal putaran mempertahankan jarak antar unsur.'
     };
@@ -287,7 +346,7 @@
     var u = h.unsur[idx], p = F.pusatUnsur(u);
     u.titik = u.titik.map(function (t) { return [2 * p[0] - t[0], t[1]]; }).reverse();
     return {
-      fig: F.pusatkan(h), jenis: 'cerminUnsur', idx: idx,
+      fig: F.pusatkan(h), jenis: 'cerminUnsur', idx: idx, sorot: idx,
       alasan: 'hanya ' + namaUnsur(fig, idx) + ' yang tercermin, sedangkan unsur lain tidak. ' +
         'Akibatnya sudut terbuka unsur itu menghadap ke arah yang berlawanan.'
     };
@@ -328,14 +387,26 @@
    * @param {Array}  sudahAda bentuk pilihan lain yang sudah dipakai
    * @param {object} a pengacak
    * @param {string} tingkat
-   * @param {object} opsi { hindariJenis: Array, wajibSama: bool }
+   * @param {object} opsi
+   *   hindariJenis  daftar nama strategi yang sudah dipakai
+   *   hindariAlasan daftar kalimat alasan yang sudah dipakai
+   *   profil        bila diisi sebuah bentuk, pengecoh WAJIB berprofil sama
+   *                 dengannya (lihat `profilCocok`) — dipakai kesesuaian dan
+   *                 ketidaksamaan supaya kelima opsi tampak sekeluarga
    */
   function cariPengecoh(acuan, sudahAda, a, tingkat, opsi) {
     opsi = opsi || {};
-    var urut = PRIORITAS[tingkat] || PRIORITAS.sedang;
     var minBeda = bedaMin(tingkat);
     var terpakai = opsi.hindariJenis || [];
     var alasanTerpakai = opsi.hindariAlasan || [];
+
+    // Kalau profilnya harus sama, hanya strategi kaku yang mungkin lolos.
+    // Menyaringnya di sini, bukan sesudah bentuknya jadi, menghemat sekitar
+    // 44% percobaan yang pasti gagal.
+    var urut = (PRIORITAS[tingkat] || PRIORITAS.sedang);
+    if (opsi.profil) {
+      urut = urut.filter(function (n) { return CACAT_KAKU.indexOf(n) >= 0; });
+    }
 
     for (var c = 0; c < AMBANG.coba; c++) {
       // Dua putaran pertama mengikuti prioritas tingkat kesulitan; sesudah itu
@@ -364,6 +435,12 @@
       // `adalahRotasi` biasanya berhenti seketika di saringan tanda bentuk,
       // sedangkan `bedaBentuk` menyisir puluhan sudut — memanggilnya lebih dulu
       // membuang waktu pada calon yang toh akan ditolak.
+
+      // (0) Profilnya harus sama persis dengan acuan bila diminta. Diperiksa
+      //     dari geometrinya, bukan sekadar percaya pada daftar CACAT_KAKU —
+      //     kalau kelak ada strategi baru yang keliru digolongkan kaku, aturan
+      //     ini tetap menangkapnya.
+      if (opsi.profil && !profilCocok(hasil.fig, opsi.profil)) continue;
 
       // (1) Jaminan pokok: pengecoh tidak boleh terhubung putaran dengan acuan.
       if (F.adalahRotasi(hasil.fig, acuan)) continue;
@@ -429,12 +506,20 @@
     var sudutLain = sudutTampil(a, 8, tingkat);
 
     for (var i = 0; i < 4; i++) {
-      var p = cariPengecoh(dasar, dipakai, a, tingkat,
-        { hindariJenis: jenisDipakai, hindariAlasan: alasanDipakai });
+      // Pada tingkat sulit, `profil` menahan kelima opsi memakai potongan yang
+      // sama persis; yang membedakan hanya susunannya, jadi satu-satunya jalan
+      // memilih adalah membayangkan putarannya.
+      var p = cariPengecoh(dasar, dipakai, a, tingkat, {
+        hindariJenis: jenisDipakai, hindariAlasan: alasanDipakai,
+        profil: wajibProfilSama(tingkat) ? dasar : null
+      });
       if (!p) return null;
       var tampil = sudutLain[i % sudutLain.length];
       var fig = F.putar(p.fig, tampil);
-      pilihan.push({ fig: fig, benar: false, jenis: p.jenis, beda: p.beda, alasan: p.alasan });
+      pilihan.push({
+        fig: fig, benar: false, jenis: p.jenis, beda: p.beda,
+        sorot: p.sorot, alasan: p.alasan
+      });
       dipakai.push(fig);
       jenisDipakai.push(p.jenis);
       alasanDipakai.push(p.alasan);
@@ -450,7 +535,11 @@
 
   function buatKetidaksamaan(dasar, a, tingkat) {
     var sudut = sudutTampil(a, 5, tingkat);
-    var p = cariPengecoh(dasar, [], a, tingkat, {});
+    // Gambar yang berbeda sendiri harus berprofil sama dengan keempat lainnya,
+    // sebab kalau jumlah atau ukuran unsurnya yang berbeda, ia ketahuan tanpa
+    // perlu membandingkan susunan sama sekali.
+    var p = cariPengecoh(dasar, [], a, tingkat,
+      { profil: wajibProfilSama(tingkat) ? dasar : null });
     if (!p) return null;
 
     var pilihan = [];
@@ -462,7 +551,7 @@
     }
     pilihan.push({
       fig: F.putar(p.fig, sudut[4]), benar: true, jenis: p.jenis, beda: p.beda,
-      alasan: p.alasan
+      sorot: p.sorot, alasan: p.alasan
     });
 
     return {
@@ -546,7 +635,8 @@
     // Sisanya: hasil yang benar sudutnya tetapi salah satu unsurnya cacat.
     var alasanDipakai = [];
     while (pilihan.length < 5) {
-      var p = cariPengecoh(kunci, dipakai, a, tingkat, { hindariAlasan: alasanDipakai });
+      var p = cariPengecoh(kunci, dipakai, a, tingkat,
+        { hindariAlasan: alasanDipakai, profil: wajibProfilSama(tingkat) ? kunci : null });
       if (!p) return null;
       pilihan.push({
         fig: p.fig, benar: false, jenis: p.jenis, beda: p.beda,
@@ -767,6 +857,25 @@
       }
     }
 
+    /*
+     * Pada kesesuaian dan ketidaksamaan, KELIMA opsi harus berprofil sama:
+     * daftar unsur dan jangkauan yang identik. Kalau ada satu opsi yang
+     * jumlah, ukuran, atau isi unsurnya berbeda, opsi itu bisa dicoret sekilas
+     * tanpa membayangkan putaran — soalnya berhenti menguji penalaran ruang.
+     */
+    if (wajibProfilSama(soal.tingkat) &&
+        (soal.tipe === 'kesesuaian' || soal.tipe === 'ketidaksamaan')) {
+      var acuanProfil = soal.tipe === 'kesesuaian'
+        ? soal.dasar
+        : pilihan[soal.jawabanIndex === 0 ? 1 : 0].fig;
+      pilihan.forEach(function (p, k) {
+        if (!profilCocok(p.fig, acuanProfil)) {
+          pesan.push('Opsi ' + huruf(k) + ' berbeda jumlah, ukuran, atau isi unsurnya — ' +
+            'bisa dicoret tanpa membayangkan putaran.');
+        }
+      });
+    }
+
     if (soal.tipe === 'kesesuaian') {
       var sah = [];
       pilihan.forEach(function (p, k) { if (F.adalahRotasi(p.fig, soal.dasar)) sah.push(huruf(k)); });
@@ -906,10 +1015,10 @@
 
   return {
     TIPE: TIPE, TINGKAT: TINGKAT, SUDUT: SUDUT, AMBANG: AMBANG,
-    PERINTAH: PERINTAH, CACAT: CACAT, PRIORITAS: PRIORITAS,
+    PERINTAH: PERINTAH, CACAT: CACAT, PRIORITAS: PRIORITAS, CACAT_KAKU: CACAT_KAKU,
     buat: buat, audit: audit, pembahasan: pembahasan,
     sidik: sidik, sidikBentuk: sidikBentuk,
-    cariPengecoh: cariPengecoh, layakPengecoh: layakPengecoh,
+    cariPengecoh: cariPengecoh, layakPengecoh: layakPengecoh, profilCocok: profilCocok,
     huruf: huruf, namaUnsur: namaUnsur, arahPutar: arahPutar,
     arahPutarBertanda: arahPutarBertanda
   };

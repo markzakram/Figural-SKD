@@ -178,6 +178,127 @@
     return bungkusPenuh(b.svg, b.width, b.height, b.width);
   }
 
+  // ------------------------------------------------------ gambar pembahasan
+
+  var MERAH = '#c0392b';
+
+  /**
+   * Baris 1 — gambar acuan bersanding dengan kunci, unsur yang bersesuaian
+   * diberi WARNA DAN NOMOR yang sama.
+   *
+   * Tanpa penanda ini, kalimat "diputar 225 derajat" hanya bisa dipercaya,
+   * tidak bisa diperiksa: pada gambar garis polos tidak ada apa pun yang bisa
+   * ditelusuri mata dari gambar acuan ke gambar kuncinya. Dengan warna dan
+   * nomor, pembaca cukup mengikuti satu warna untuk melihat ke mana unsur itu
+   * berpindah — dan melihat sendiri bahwa semuanya berpindah bersama-sama.
+   *
+   * Kuncinya adalah `F.putar()` mempertahankan URUTAN unsur, jadi unsur ke-i
+   * pada gambar acuan pasti unsur ke-i pada kuncinya. Padanannya tidak perlu
+   * dicari-cari.
+   */
+  function barisPadanan(soal, sisi, skala, uk) {
+    var acuan = soal.dasar;
+    var kunci = soal.pilihan[soal.jawabanIndex].fig;
+    var warna = acuan.unsur.map(function (u, i) { return R.paletUnsur(i); });
+    var nomor = acuan.unsur.map(function (u, i) { return i + 1; });
+
+    var kiri = R.kotak(acuan, sisi, { skala: skala, warna: warna, nomor: nomor });
+    var kanan = R.kotak(kunci, sisi, {
+      skala: skala, warna: warna, nomor: nomor, sorot: true
+    });
+
+    var jarak = Math.round(sisi * 0.46);
+    var atas = uk + 6;
+    var xKanan = sisi + jarak;
+    var isi = [];
+    isi.push(R.text('Gambar acuan', sisi / 2, uk, { size: uk, weight: 700, anchor: 'middle', fill: '#334' }));
+    isi.push('<g transform="translate(0,' + atas + ')">' + kiri.svg + '</g>');
+    isi.push(R.text('Opsi ' + soal.jawabanHuruf + ' (kunci)', xKanan + sisi / 2, uk,
+      { size: uk, weight: 700, anchor: 'middle', fill: '#334' }));
+    isi.push('<g transform="translate(' + R.num(xKanan) + ',' + atas + ')">' + kanan.svg + '</g>');
+    isi.push(R.panah(sisi + jarak * 0.16, atas + sisi / 2, jarak * 0.68));
+    isi.push(R.text(F.norm360(soal.sudutKunci) + '°', sisi + jarak / 2, atas + sisi / 2 - uk * 0.75,
+      { size: Math.round(uk * 1.05), weight: 700, anchor: 'middle', fill: '#12805c' }));
+    return { svg: isi.join(''), width: xKanan + sisi, height: atas + sisi };
+  }
+
+  /**
+   * Baris 2 — tahapan putaran.
+   *
+   * Gambar acuan ditampilkan pada tiga sudut antara sampai tiba di sudut
+   * kuncinya, sehingga "225 derajat searah jarum jam" bisa DILIHAT terjadi,
+   * bukan sekadar dibaca angkanya. Bingkai terakhir adalah gambar yang sama
+   * persis dengan opsi kuncinya.
+   */
+  function barisTahap(soal, sisi, skala, uk) {
+    var langkah = 3;
+    var total = F.norm360(soal.sudutKunci);
+    var warna = soal.dasar.unsur.map(function (u, i) { return R.paletUnsur(i); });
+    var jarak = Math.round(sisi * 0.24);
+    var isi = [];
+    for (var k = 0; k <= langkah; k++) {
+      var d = total * k / langkah;
+      var akhir = k === langkah;
+      var kk = R.kotak(F.putar(soal.dasar, d), sisi, {
+        skala: skala, warna: warna, tebal: Math.max(1, sisi * 0.014),
+        warnaTepi: akhir ? '#12805c' : null
+      });
+      var x = k * (sisi + jarak);
+      isi.push('<g transform="translate(' + R.num(x) + ',0)">' + kk.svg + '</g>');
+      isi.push(R.text(akhir ? Math.round(d) + '° = opsi ' + soal.jawabanHuruf : Math.round(d) + '°',
+        x + sisi / 2, sisi + uk + 2,
+        { size: uk, weight: akhir ? 700 : 400, anchor: 'middle', fill: akhir ? '#12805c' : '#667089' }));
+      if (!akhir) {
+        isi.push(R.panah(x + sisi + jarak * 0.14, sisi / 2, jarak * 0.72, { tebal: 1.6 }));
+      }
+    }
+    var lebar = (langkah + 1) * sisi + langkah * jarak;
+    return { svg: isi.join(''), width: lebar, height: sisi + uk + 6 };
+  }
+
+  /**
+   * Baris 3 — peta pengecoh: kelima opsi kecil-kecil, unsur yang cacat
+   * diwarnai MERAH dan digemukkan.
+   *
+   * Pembahasan menulis "letak bingkai terluar berpindah"; tanpa peta ini
+   * pembaca harus mencari sendiri bingkai mana yang dimaksud di antara lima
+   * gambar yang mirip. `sorot` bernilai -1 untuk cacat yang mengenai seluruh
+   * gambar (pencerminan) dan null bila memang tak ada yang bisa ditunjuk
+   * (unsurnya justru hilang).
+   */
+  function barisPeta(soal, sisi, skala, uk) {
+    var jarak = Math.round(sisi * 0.20);
+    var isi = [];
+    soal.pilihan.forEach(function (p, i) {
+      var n = p.fig.unsur.length;
+      var warna = new Array(n), tebalUnsur = new Array(n);
+      if (!p.benar && p.sorot != null) {
+        for (var j = 0; j < n; j++) {
+          var kena = p.sorot === -1 || p.sorot === j;
+          warna[j] = kena ? MERAH : '#9aa3b8';
+          tebalUnsur[j] = kena ? 1.7 : 1;
+        }
+      }
+      // Bingkai merah dipasang pada SEMUA opsi yang salah, termasuk yang
+      // cacatnya berupa unsur yang hilang dan karena itu tidak punya unsur
+      // untuk ditandai — kalau tidak, opsi itu tampak seperti kunci kedua.
+      var kk = R.kotak(p.fig, sisi, {
+        skala: skala, warna: warna, tebalUnsur: tebalUnsur,
+        sorot: p.benar, warnaTepi: p.benar ? null : MERAH
+      });
+      var x = i * (sisi + jarak);
+      isi.push('<g transform="translate(' + R.num(x) + ',0)">' + kk.svg + '</g>');
+      isi.push(R.text(Q.huruf(i) + (p.benar ? ' ✓' : ''), x + sisi / 2, sisi + uk + 2, {
+        size: uk, weight: 700, anchor: 'middle', fill: p.benar ? '#12805c' : MERAH
+      }));
+    });
+    return {
+      svg: isi.join(''),
+      width: 5 * sisi + 4 * jarak,
+      height: sisi + uk + 6
+    };
+  }
+
   /**
    * Halaman pembahasan: gambar acuan bersanding dengan opsi kunci.
    *
@@ -192,6 +313,49 @@
     var uk = Math.max(11, Math.round(sisi * 0.115));
     var jarak = Math.round(sisi * 0.46);
     var atas = uk + 8;
+
+    /*
+     * Kesesuaian mendapat tiga baris sekaligus, karena di situlah seluruh
+     * pertanyaannya: MENGAPA kunci itu benar. Baris pertama memasangkan
+     * unsurnya lewat warna dan nomor, baris kedua memperlihatkan putarannya
+     * berlangsung, baris ketiga menunjuk unsur yang cacat pada tiap pengecoh.
+     * Susunannya menumpuk ke bawah, dan itu justru pas dengan halaman PDF-nya
+     * yang menyediakan kolom gambar selebar 480 pt namun setinggi 610 pt.
+     */
+    if (soal.tipe === 'kesesuaian' && opsi.ringkas !== true) {
+      /*
+       * Skala dihitung ULANG untuk tiap baris menurut ukuran kotaknya sendiri.
+       * Memakai satu skala untuk semua baris — seperti yang dilakukan di dalam
+       * satu baris — membuat gambar tumpah keluar kotak pada baris yang
+       * kotaknya lebih kecil. Perbandingan antar opsi tetap adil karena yang
+       * penting adalah SATU skala di dalam satu baris, bukan antar baris.
+       */
+      var sisi1 = Math.round(sisi * 0.92);
+      var sisi2 = Math.round(sisi * 0.52);
+      var sisi3 = Math.round(sisi * 0.44);
+      var uk2 = Math.max(9, Math.round(uk * 0.85));
+
+      var baris = [
+        { judul: null, blok: barisPadanan(soal, sisi1, skalaSoal(soal, sisi1), uk) },
+        { judul: 'Tahap putaran', blok: barisTahap(soal, sisi2, skalaSoal(soal, sisi2), uk2) },
+        { judul: 'Unsur yang keliru pada tiap opsi', blok: barisPeta(soal, sisi3, skalaSoal(soal, sisi3), uk2) }
+      ];
+      var lebar = Math.max.apply(null, baris.map(function (r) { return r.blok.width; }));
+      var isi3 = [], y3 = 0;
+
+      baris.forEach(function (r) {
+        if (r.judul) {
+          y3 += Math.round(uk * 1.9);
+          isi3.push(R.text(r.judul, 0, y3, { size: uk, weight: 700, fill: '#334' }));
+          y3 += Math.round(uk * 0.7);
+        }
+        isi3.push('<g transform="translate(' + R.num((lebar - r.blok.width) / 2) + ',' +
+          R.num(y3) + ')">' + r.blok.svg + '</g>');
+        y3 += r.blok.height;
+      });
+
+      return bungkus(isi3.join(''), lebar, y3);
+    }
 
     var kiriFig, kiriLabel;
     if (soal.tipe === 'kesesuaian') {

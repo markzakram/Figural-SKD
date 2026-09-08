@@ -270,5 +270,52 @@ cek('alasan tidak kembar', alasanKembar === 0, alasanKembar + ' pasang opsi bera
 cek('alasan selalu ada', alasanKosong === 0, alasanKosong + ' opsi tanpa alasan');
 console.log('   ' + alasanCek + ' soal: setiap opsi menyebut satu beda yang khas');
 
+// ---------------------- 10. kelima opsi memakai potongan yang sama persis
+console.log('\n10. Tingkat SULIT: kelima opsi berprofil sama');
+var profilBeda = 0, profilCek = 0, opsiCek = 0;
+['kesesuaian', 'ketidaksamaan'].forEach(function (tp) {
+  for (var i = 0; i < N * 8; i++) {
+    var sp = Q.buat({ tipe: tp, tingkat: 'sulit', keluarga: 'campur', benih: 150000 + i * 23 });
+    if (!sp) continue;
+    profilCek++;
+    // Acuannya gambar soal untuk kesesuaian, atau salah satu gambar "yang sama"
+    // untuk ketidaksamaan.
+    var acuan = tp === 'kesesuaian'
+      ? sp.dasar
+      : sp.pilihan[sp.jawabanIndex === 0 ? 1 : 0].fig;
+    sp.pilihan.forEach(function (p, k) {
+      opsiCek++;
+      if (Q.profilCocok(p.fig, acuan)) return;
+      profilBeda++;
+      if (profilBeda < 4) {
+        console.log('  ' + tp + ' benih ' + sp.benih + ' opsi ' + Q.huruf(k) +
+          ': unsur ' + p.fig.unsur.length + ' vs ' + acuan.unsur.length +
+          ', jangkauan ' + F.jangkauan(p.fig).toFixed(1) + ' vs ' + F.jangkauan(acuan).toFixed(1));
+      }
+    });
+  }
+});
+cek('profil kelima opsi sama', profilBeda === 0,
+  profilBeda + ' opsi berbeda jumlah/ukuran unsurnya — bisa dicoret tanpa memutar');
+console.log('   ' + profilCek + ' soal sulit, ' + opsiCek +
+  ' opsi: semuanya memakai potongan yang sama persis dengan acuannya');
+
+// Sebaliknya, tingkat mudah MEMANG harus memakai pengecoh yang mudah dicoret;
+// kalau tidak, ketiga tingkat kesulitan menghasilkan soal yang sama saja.
+var mudahLonggar = 0, mudahCek = 0;
+for (i = 0; i < N * 8; i++) {
+  var sm = Q.buat({ tipe: 'kesesuaian', tingkat: 'mudah', keluarga: 'campur', benih: 170000 + i * 23 });
+  if (!sm) continue;
+  mudahCek++;
+  var adaLonggar = sm.pilihan.some(function (p) {
+    return !p.benar && !Q.profilCocok(p.fig, sm.dasar);
+  });
+  if (adaLonggar) mudahLonggar++;
+}
+cek('tingkat mudah memang lebih longgar', mudahLonggar > mudahCek * 0.5,
+  'hanya ' + mudahLonggar + ' dari ' + mudahCek + ' soal mudah yang punya pengecoh mencolok');
+console.log('   ' + mudahLonggar + ' dari ' + mudahCek +
+  ' soal mudah punya minimal satu pengecoh yang bisa dicoret sekilas');
+
 console.log('\n' + (gagal ? gagal + ' PEMERIKSAAN GAGAL' : 'Semua pemeriksaan lulus.'));
 process.exit(gagal ? 1 : 0);

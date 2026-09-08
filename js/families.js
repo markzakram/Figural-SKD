@@ -41,7 +41,11 @@
     { id: 'sarang', nama: 'Garis bersarang' },
     { id: 'datar', nama: 'Bangun datar + penanda' },
     { id: 'kisi', nama: 'Kisi titik & penghubung' },
-    { id: 'panah', nama: 'Panah, sirip & kait' }
+    { id: 'panah', nama: 'Panah, sirip & kait' },
+    { id: 'zigzag', nama: 'Pita zigzag menyilang' },
+    { id: 'sisir', nama: 'Tulang & gigi sisir' },
+    { id: 'blok', nama: 'Blok bertumpuk' },
+    { id: 'silang', nama: 'Lingkaran & tali silang' }
   ];
 
   var AMBANG = {
@@ -275,7 +279,144 @@
     return unsur;
   }
 
-  var PEMBANGKIT = { sarang: sarang, datar: datar, kisi: kisi, panah: panah };
+  // ----------------------------------------------------------- keluarga E: zigzag
+
+  /**
+   * Pita zigzag — dua sampai tiga garis patah panjang yang saling menyilang.
+   *
+   * Berbeda dari `sarang` yang bingkainya bersarang rapi, di sini garisnya
+   * memanjang melintasi gambar sehingga yang harus ditelusuri adalah arah
+   * lipatan tiap pita, bukan urutan besar-kecilnya.
+   */
+  function zigzag(a) {
+    var n = a.bulat(2, 3);
+    var unsur = [];
+    var arah = a.antara(0, 360);
+    for (var i = 0; i < n; i++) {
+      var m = a.bulat(3, 5);
+      var panjang = R * a.antara(1.1, 1.7);
+      var amplitudo = R * a.antara(0.16, 0.34);
+      var pts = [];
+      for (var k = 0; k < m; k++) {
+        var t = -panjang / 2 + panjang * (k / (m - 1));
+        pts.push(titik(t, (k % 2 ? 1 : -1) * amplitudo * a.antara(0.7, 1.0)));
+      }
+      var u = garis(pts, { nama: i === 0 ? 'pita utama' : 'pita silang' });
+      putarUnsurLokal(u, arah + i * a.antara(48, 96) * (a.untung(0.7) ? 1 : -1));
+      var d = R * a.antara(0, 0.22), ar = a.antara(0, 360) * Math.PI / 180;
+      geserUnsur(u, d * Math.cos(ar), d * Math.sin(ar));
+      unsur.push(u);
+    }
+    if (a.untung(0.5)) {
+      unsur.push(bulat(titik(a.antara(-14, 14), a.antara(-14, 14)), R * a.antara(0.09, 0.14),
+        a.untung(0.55) ? '#111' : null, 'titik penanda'));
+    }
+    return unsur;
+  }
+
+  // ------------------------------------------------------------ keluarga F: sisir
+
+  /**
+   * Tulang & gigi sisir — satu tulang punggung dengan 3-5 gigi yang panjangnya
+   * berbeda-beda pada satu sisi. Panjang gigi yang tidak seragam itulah yang
+   * membuat bentuknya kiral dan arahnya harus dibaca.
+   */
+  function sisir(a) {
+    var arah = a.antara(0, 360);
+    var panjang = R * a.antara(1.25, 1.7);
+    var tulang = garis([titik(-panjang / 2, 0), titik(panjang / 2, 0)], { nama: 'tulang' });
+    var unsur = [tulang];
+
+    var n = a.bulat(3, 5);
+    var sisi = a.tanda();
+    for (var i = 0; i < n; i++) {
+      var t = -panjang / 2 + panjang * ((i + a.antara(0.35, 0.75)) / n);
+      var tinggi = R * a.antara(0.32, 0.78) * sisi;
+      // Sesekali satu gigi menyeberang ke sisi lain supaya sisirnya tidak
+      // pernah menjadi bentuk yang simetri terhadap tulangnya.
+      if (i > 0 && a.untung(0.22)) tinggi = -tinggi * a.antara(0.5, 0.85);
+      var condong = a.antara(-0.35, 0.35) * Math.abs(tinggi);
+      unsur.push(garis([titik(t, 0), titik(t + condong, tinggi)], { nama: 'gigi' }));
+    }
+    if (a.untung(0.45)) {
+      unsur.push(bulat(titik(panjang / 2 * a.antara(0.7, 0.95), 0), R * a.antara(0.09, 0.13),
+        a.untung(0.5) ? '#111' : null, 'titik ujung'));
+    }
+    unsur.forEach(function (u) { putarUnsurLokal(u, arah); });
+    return unsur;
+  }
+
+  // ------------------------------------------------------------- keluarga G: blok
+
+  /**
+   * Blok bertumpuk — dua sampai empat segi empat tertutup pada sudut dan letak
+   * berbeda yang saling bertindihan sebagian. Berbeda dari `sarang`, blok di
+   * sini tidak bersarang: yang dibaca adalah letak tumpukannya.
+   */
+  function blok(a) {
+    var n = a.bulat(2, 4);
+    var unsur = [];
+    for (var i = 0; i < n; i++) {
+      var lebar = R * a.antara(0.34, 0.62);
+      var tinggi = R * a.antara(0.30, 0.62);
+      var u = garis([
+        titik(-lebar, -tinggi), titik(lebar, -tinggi),
+        titik(lebar, tinggi), titik(-lebar, tinggi)
+      ], { tutup: true, nama: 'blok' });
+      putarUnsurLokal(u, a.antara(0, 360));
+      var d = R * a.antara(0.24, 0.62), ar = (a.antara(0, 360) + i * 360 / n) * Math.PI / 180;
+      geserUnsur(u, d * Math.cos(ar), d * Math.sin(ar));
+      unsur.push(u);
+    }
+    if (a.untung(0.55)) {
+      var ar2 = a.antara(0, 360) * Math.PI / 180, d2 = R * a.antara(0.2, 0.5);
+      unsur.push(bulat(titik(d2 * Math.cos(ar2), d2 * Math.sin(ar2)), R * a.antara(0.10, 0.16),
+        a.untung(0.5) ? '#111' : null, 'titik penanda'));
+    }
+    return unsur;
+  }
+
+  // ---------------------------------------------------------- keluarga H: silang
+
+  /**
+   * Lingkaran & tali silang — satu lingkaran besar dengan 3-4 tali busur yang
+   * ujungnya di keliling, plus titik di dalamnya.
+   *
+   * Lingkarannya sendiri simetri sempurna sehingga tidak menyumbang apa pun
+   * pada arah; seluruh arah datang dari tali dan titiknya. Keluarga ini satu-
+   * satunya yang bergaris lengkung, jadi sekilas langsung berbeda dari tujuh
+   * keluarga lain.
+   */
+  function silang(a) {
+    var jari = R * a.antara(0.88, 1.0);
+    var unsur = [bulat(titik(0, 0), jari, null, 'lingkaran luar')];
+    var n = a.bulat(3, 4);
+    var sudut = [];
+    for (var i = 0; i < n * 2; i++) sudut.push(a.antara(0, 360));
+
+    for (i = 0; i < n; i++) {
+      var a1 = sudut[i * 2] * Math.PI / 180, a2 = sudut[i * 2 + 1] * Math.PI / 180;
+      // Tali yang kedua ujungnya berdekatan hanya menjadi guratan pendek di
+      // tepi; jaraknya dipaksa minimal 50 derajat.
+      if (Math.abs(sudut[i * 2] - sudut[i * 2 + 1]) % 360 < 50) a2 += Math.PI * a.antara(0.35, 0.9);
+      unsur.push(garis([
+        titik(jari * Math.cos(a1), jari * Math.sin(a1)),
+        titik(jari * Math.cos(a2), jari * Math.sin(a2))
+      ], { nama: 'tali busur' }));
+    }
+    var m = a.bulat(1, 2);
+    for (i = 0; i < m; i++) {
+      var ar = a.antara(0, 360) * Math.PI / 180, d = jari * a.antara(0.25, 0.6);
+      unsur.push(bulat(titik(d * Math.cos(ar), d * Math.sin(ar)), jari * a.antara(0.09, 0.14),
+        a.untung(0.55) ? '#111' : null, 'titik dalam'));
+    }
+    return unsur;
+  }
+
+  var PEMBANGKIT = {
+    sarang: sarang, datar: datar, kisi: kisi, panah: panah,
+    zigzag: zigzag, sisir: sisir, blok: blok, silang: silang
+  };
 
   // ---------------------------------------------------------------- penyaring
 

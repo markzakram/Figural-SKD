@@ -46,50 +46,68 @@
    * @param {Array} p titik sebelum ujung
    * @param {Array} q titik ujung
    */
-  function ujung(p, q, jenis, skala, tebal) {
+  function ujung(p, q, jenis, skala, tebal, warna) {
     var dx = q[0] - p[0], dy = q[1] - p[1];
     var pj = Math.hypot(dx, dy) || 1;
     var ux = dx / pj, uy = dy / pj;
     var nx = -uy, ny = ux;
+    var c = warna || TINTA;
 
     if (jenis === 1) {                       // mata panah tertutup
       var pjK = Math.max(4, skala * 0.075), lb = pjK * 0.52;
       var a = [q[0] - ux * pjK + nx * lb, q[1] - uy * pjK + ny * lb];
       var b = [q[0] - ux * pjK - nx * lb, q[1] - uy * pjK - ny * lb];
-      return '<polygon points="' + pts([q, a, b]) + '" fill="' + TINTA + '"/>';
+      return '<polygon points="' + pts([q, a, b]) + '" fill="' + c + '"/>';
     }
     // kait: ruas pendek melintang pada ujungnya
     var pjH = Math.max(4, skala * 0.085);
-    var c = [q[0] + (nx - ux * 0.35) * pjH, q[1] + (ny - uy * 0.35) * pjH];
-    return '<polyline points="' + pts([q, c]) + '" fill="none" stroke="' + TINTA +
+    var k = [q[0] + (nx - ux * 0.35) * pjH, q[1] + (ny - uy * 0.35) * pjH];
+    return '<polyline points="' + pts([q, k]) + '" fill="none" stroke="' + c +
       '" stroke-width="' + num(tebal) + '" stroke-linecap="round"/>';
   }
 
-  /** Satu unsur, sudah dalam koordinat layar. */
-  function unsur(u, skala, tebal) {
+  /**
+   * Satu unsur, sudah dalam koordinat layar.
+   * `warna` mewarnai unsur itu saja — dipakai gambar pembahasan untuk menandai
+   * unsur yang bersesuaian antara gambar acuan dan kuncinya.
+   */
+  function unsur(u, skala, tebal, warna) {
     var t = tebal * (u.tebal || 1);
+    var c = warna || TINTA;
     if (u.jenis === 'bulat') {
       return '<circle cx="' + num(u.pusat[0]) + '" cy="' + num(u.pusat[1]) +
-        '" r="' + num(u.jari) + '" fill="' + (u.isi ? TINTA : 'none') +
-        '" stroke="' + TINTA + '" stroke-width="' + num(t) + '"/>';
+        '" r="' + num(u.jari) + '" fill="' + (u.isi ? c : 'none') +
+        '" stroke="' + c + '" stroke-width="' + num(t) + '"/>';
     }
-    var isi = u.isi ? TINTA : 'none';
+    var isi = u.isi ? c : 'none';
     var bagian = [];
     if (u.tutup) {
       bagian.push('<polygon points="' + pts(u.titik) + '" fill="' + isi +
-        '" stroke="' + TINTA + '" stroke-width="' + num(t) +
+        '" stroke="' + c + '" stroke-width="' + num(t) +
         '" stroke-linejoin="round"/>');
     } else {
       bagian.push('<polyline points="' + pts(u.titik) + '" fill="' + isi +
-        '" stroke="' + TINTA + '" stroke-width="' + num(t) +
+        '" stroke="' + c + '" stroke-width="' + num(t) +
         '" stroke-linejoin="round" stroke-linecap="round"/>');
     }
     if (u.kepala && u.titik.length >= 2) {
       bagian.push(ujung(u.titik[u.titik.length - 2], u.titik[u.titik.length - 1],
-        u.kepala, skala, t));
+        u.kepala, skala, t, warna));
     }
     return bagian.join('');
   }
+
+  /**
+   * Warna penanda unsur pada gambar pembahasan.
+   *
+   * Nadanya sengaja TUA, kebalikan dari generator jaring-jaring yang mewarnai
+   * bidang dengan nada muda. Di sini yang diwarnai adalah GARIS setebal satu
+   * sampai dua piksel; warna muda pada garis setipis itu hilang saat dicetak.
+   */
+  var PALET = ['#c0392b', '#1f6fd0', '#12805c', '#8e44ad', '#b8860b', '#0e7c86',
+    '#d35400', '#5b4bc4'];
+
+  function paletUnsur(i) { return PALET[i % PALET.length]; }
 
   // ---------------------------------------------------------------- kotak
 
@@ -109,28 +127,108 @@
   }
 
   /**
+   * Letakkan bulatan bernomor DI LUAR unsurnya, dengan garis penunjuk pendek
+   * yang berujung di dalam unsur tersebut.
+   *
+   * Ditaruh di dalam, bulatan sebesar itu menutupi garis yang justru harus
+   * dibaca. Penempatnya mencoba dua belas arah di sekeliling pusat unsur dan
+   * memilih yang paling jauh dari garis mana pun DAN dari bulatan yang sudah
+   * terpasang — tanpa itu dua nomor bisa memperebutkan celah yang sama pada
+   * gambar yang padat.
+   *
+   * @param {Array} unsurLayar unsur yang sudah berkoordinat layar
+   * @param {Array} nomor      nomor per unsur (null = tidak dinomori)
+   * @param {Array} warna      warna per unsur
+   * @param {number} sisi      sisi kotak
+   */
+  function nomorUnsur(unsurLayar, nomor, warna, sisi) {
+    var jariBulatan = Math.max(6, sisi * 0.052);
+    var batas = sisi / 2 - jariBulatan - 1;
+    // Semua titik tinta, dipakai menghitung seberapa "ramai" sebuah calon letak.
+    var tinta = F.sampelBatas({ unsur: unsurLayar }, 90);
+    var terpasang = [];
+    var bagian = [];
+
+    unsurLayar.forEach(function (u, i) {
+      if (nomor[i] == null) return;
+      var pusat = F.pusatUnsur(u);
+      var titikU = F.sampelBatas({ unsur: [u] }, 24);
+      // Jari-jari unsur itu sendiri: sejauh mana ia terbentang dari pusatnya.
+      var jariU = 0;
+      titikU.forEach(function (p) {
+        jariU = Math.max(jariU, Math.hypot(p[0] - pusat[0], p[1] - pusat[1]));
+      });
+
+      var terbaik = null, nilaiTerbaik = -Infinity;
+      for (var k = 0; k < 12; k++) {
+        var a = k * Math.PI / 6;
+        var r = jariU + jariBulatan * 1.5;
+        var c = [pusat[0] + r * Math.cos(a), pusat[1] + r * Math.sin(a)];
+        // Harus tetap di dalam kotak.
+        if (Math.abs(c[0]) > batas || Math.abs(c[1]) > batas) continue;
+        var nilai = Infinity;
+        tinta.forEach(function (p) {
+          nilai = Math.min(nilai, Math.hypot(p[0] - c[0], p[1] - c[1]));
+        });
+        terpasang.forEach(function (p) {
+          // Bulatan yang sudah ada jadi rintangan yang lebih berat daripada garis.
+          nilai = Math.min(nilai, Math.hypot(p[0] - c[0], p[1] - c[1]) - jariBulatan);
+        });
+        if (nilai > nilaiTerbaik) { nilaiTerbaik = nilai; terbaik = c; }
+      }
+      if (!terbaik) terbaik = [pusat[0], pusat[1] - jariU - jariBulatan * 1.5];
+      terpasang.push(terbaik);
+
+      // Garis penunjuk ke titik unsur yang terdekat dengan bulatannya.
+      var dekat = titikU[0], jarakDekat = Infinity;
+      titikU.forEach(function (p) {
+        var d = Math.hypot(p[0] - terbaik[0], p[1] - terbaik[1]);
+        if (d < jarakDekat) { jarakDekat = d; dekat = p; }
+      });
+      var w = warna[i] || TINTA;
+      bagian.push('<line x1="' + num(terbaik[0]) + '" y1="' + num(terbaik[1]) +
+        '" x2="' + num(dekat[0]) + '" y2="' + num(dekat[1]) +
+        '" stroke="' + w + '" stroke-width="0.9" stroke-dasharray="2 2"/>');
+      bagian.push('<circle cx="' + num(terbaik[0]) + '" cy="' + num(terbaik[1]) +
+        '" r="' + num(jariBulatan) + '" fill="#ffffff" stroke="' + w + '" stroke-width="1.3"/>');
+      bagian.push(text(String(nomor[i]), terbaik[0], terbaik[1] + jariBulatan * 0.36, {
+        size: Math.round(jariBulatan * 1.25), weight: 700, anchor: 'middle', fill: w
+      }));
+    });
+    return bagian.join('');
+  }
+
+  /**
    * Gambar satu bentuk di dalam kotak bujur sangkar bergaris tepi.
    *
    * @param {object} fig bentuk (sudah terpusat pada titik asal)
    * @param {number} sisi panjang sisi kotak
-   * @param {object} o { skala, tebal, bingkai, sorot, latar }
+   * @param {object} o
+   *   skala, tebal, bingkai, latar
+   *   sorot       true = bingkai kotak hijau (menandai kunci)
+   *   warnaTepi   warna bingkai kotak, mengalahkan `sorot`
+   *   warna       daftar warna per unsur (null = hitam)
+   *   nomor       daftar nomor per unsur (null = tidak dinomori)
+   *   tebalUnsur  daftar pengali tebal garis per unsur
    * @returns {{svg:string, width:number, height:number}}
    */
   function kotak(fig, sisi, o) {
     o = o || {};
     var s = o.skala || skalaBersama([fig], sisi, o.pad);
     var tebal = o.tebal || Math.max(1.1, sisi * 0.013);
+    var warna = o.warna || [];
     var bagian = [];
 
     if (o.bingkai !== false) {
+      var tepi = o.warnaTepi || (o.sorot ? '#12805c' : '#c9d0de');
       bagian.push('<rect x="0.5" y="0.5" width="' + num(sisi - 1) + '" height="' + num(sisi - 1) +
         '" rx="' + num(sisi * 0.03) + '" fill="' + (o.latar || '#ffffff') +
-        '" stroke="' + (o.sorot ? '#12805c' : '#c9d0de') +
-        '" stroke-width="' + (o.sorot ? 2.5 : 1) + '"/>');
+        '" stroke="' + tepi + '" stroke-width="' +
+        ((o.sorot || o.warnaTepi) ? 2.5 : 1) + '"/>');
     }
 
-    var isi = fig ? fig.unsur.map(function (u) {
-      // Setiap unsur diskalakan lebih dulu, lalu digambar pada koordinat layar.
+    // Setiap unsur diskalakan lebih dulu, lalu digambar pada koordinat layar.
+    var unsurLayar = fig ? fig.unsur.map(function (u) {
       var v = F.salinUnsur(u);
       if (v.jenis === 'bulat') {
         v.pusat = [v.pusat[0] * s, v.pusat[1] * s];
@@ -138,8 +236,15 @@
       } else {
         v.titik = v.titik.map(function (p) { return [p[0] * s, p[1] * s]; });
       }
-      return unsur(v, sisi, tebal);
-    }).join('') : '';
+      return v;
+    }) : [];
+
+    var isi = unsurLayar.map(function (v, i) {
+      var t = tebal * ((o.tebalUnsur && o.tebalUnsur[i]) || 1);
+      return unsur(v, sisi, t, warna[i]);
+    }).join('');
+
+    if (o.nomor) isi += nomorUnsur(unsurLayar, o.nomor, warna, sisi);
 
     bagian.push('<g transform="translate(' + num(sisi / 2) + ',' + num(sisi / 2) + ')">' + isi + '</g>');
     return { svg: bagian.join(''), width: sisi, height: sisi };
@@ -226,6 +331,7 @@
     TINTA: TINTA,
     num: num, esc: esc, pts: pts, text: text, doc: doc, panah: panah, id: id,
     unsur: unsur, kotak: kotak, deret: deret, kotakTanya: kotakTanya,
+    PALET: PALET, paletUnsur: paletUnsur, nomorUnsur: nomorUnsur,
     skalaBersama: skalaBersama
   };
 });
