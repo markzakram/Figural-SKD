@@ -157,7 +157,7 @@ pada 20.000 benih berurutan: 4953 / 4927 / 5015 / 5105 — merata.
 
 ## Pengecoh
 
-Sembilan strategi, masing-masing menghasilkan satu **beda yang bisa ditelusuri di
+Sepuluh strategi, masing-masing menghasilkan satu **beda yang bisa ditelusuri di
 gambar**:
 
 | Strategi | Kesalahan yang ditampilkan |
@@ -171,6 +171,7 @@ gambar**:
 | `isiUnsur` | satu unsur berubah dari terisi ke kosong atau sebaliknya |
 | `geserUnsur` | satu unsur bergeser dari kedudukannya |
 | `cerminUnsur` | hanya satu unsur yang tercermin |
+| `putarTumpu` | satu unsur berubah sudutnya sambil tetap menempel di tempat yang sama |
 
 Tingkat kesulitan **tidak mengubah apa yang dijamin benar** — ia mengubah strategi mana
 yang dipakai, urutan prioritasnya, dan besar sudut putarnya (mudah: kelipatan 90°;
@@ -191,16 +192,85 @@ garis) dan jangkauannya. Semuanya tidak berubah saat gambar diputar.
 
 | | strategi | mengubah daftar unsur |
 |---|---|---|
-| **kaku** | cermin, putarUnsur, putarSendiri, geserUnsur, cerminUnsur | **0%** |
+| **kaku** | cermin, putarTumpu, putarUnsur, putarSendiri, geserUnsur, cerminUnsur | **0%** |
 | longgar | skalaUnsur, hapusUnsur, tambahUnsur, isiUnsur | **100%** |
 
 Angka itu diukur, bukan diasumsikan: 400 percobaan per strategi.
 
 Pada tingkat **sulit** hanya strategi kaku yang dipakai, dan tiap pengecoh masih diuji
 lagi secara geometri — profilnya wajib sama dengan gambar acuan (jangkauan boleh beda
-paling banyak 6%). Hasilnya kelima opsi memakai potongan yang sama persis; yang berbeda
-hanya susunannya, dan satu-satunya jalan memilih adalah benar-benar membayangkan
-putarannya. Diperiksa pada 128 soal sulit: **640 dari 640 opsi** berprofil sama.
+paling banyak 6%). Diperiksa pada 128 soal sulit: **640 dari 640 opsi** berprofil sama.
+
+### Daftar unsur yang sama pun belum cukup
+
+Daftar unsur dan jangkauan yang sama ternyata masih menyisakan jalan pintas. Sebuah
+pengecoh bisa memakai potongan yang sama persis namun **hubungan antar potongannya**
+berubah — dan hubungan itu pun terbaca sekilas:
+
+- tali busur yang semula menempel di dua sudut segienam kini **menyembul keluar** sisinya;
+- lima batang yang semula bertemu di satu titik kini **tidak bertemu lagi**.
+
+Keduanya tidak menuntut penjawab memutar apa pun. Karena itu profil diperluas dengan
+**struktur hubungan**, yang juga tidak berubah saat gambar diputar:
+
+| | yang diukur |
+|---|---|
+| **simpul** | berapa daerah terpisah tempat dua unsur BERSAMBUNG DI UJUNG |
+| **wadah** | `d` seluruhnya di dalam, `l` seluruhnya di luar, `s` menyembul separuh |
+
+Persilangan di tengah garis sengaja **tidak** dihitung. Dua tali busur yang berpotongan
+di dalam lingkaran memang berbeda polanya, tetapi menghitung persilangan semacam itu
+menuntut penelusuran satu per satu — sama beratnya dengan membayangkan putaran, jadi ia
+bukan jalan pintas yang perlu ditutup. Waktu persilangan sempat ikut dihitung, keluarga
+`silang` nyaris tak bisa dipakai pada tingkat sulit: hanya 11 dari 40 bentuk yang
+sanggup memberi empat pengecoh.
+
+### Pengecoh yang memutar unsur pada tumpuannya
+
+Syarat struktur itu menutup hampir semua strategi lama — memutar sebuah unsur terhadap
+pusat gambar justru merusak sambungannya. Karena itu ditambahkan strategi `putarTumpu`,
+yang memilih **titik putar sedemikian rupa sehingga sambungannya bertahan**:
+
+1. titik tumpu, yaitu pusat daerah tempat unsur ini menyentuh unsur lain — lima batang
+   yang bertemu di satu pusat tetap bertemu di sana;
+2. pusat unsur tertutup yang **disentuh atau mewadahinya** — tali busur yang diputar
+   terhadap pusat lingkaran, kedua ujungnya tetap di keliling;
+3. pusat gambar, untuk unsur yang memang tidak menyentuh apa pun.
+
+Wadah bersudut mendapat perlakuan khusus: sudut putarnya dibatasi **kelipatan 360/n**,
+sebab memutar tali busur sembarang derajat terhadap pusat segienam melemparkan ujungnya
+keluar sisi — jarak sudut ke pusat lebih jauh daripada jarak sisi ke pusat. Kelipatan
+360/n memetakan sudut ke sudut, sehingga talinya berpindah menghubungkan **pasangan
+sudut lain**: persis variasi yang wajar.
+
+Yang tersisa berbeda hanyalah sudut antar unsur, dan itu hanya bisa dibandingkan dengan
+menumpangkan kedua gambar di kepala. Seluruh delapan keluarga kini sanggup menyusun soal
+sulit: **320 dari 320**.
+
+### Struktur hubungan harus benar-benar kebal putaran
+
+Kalau ukuran yang dipakai menyaring itu sendiri bergoyang saat gambar diputar, kunci
+jawabannya sendiri bisa dinyatakan berstruktur beda dari acuannya dan soalnya gagal
+disusun. Tiga sumbernya ditemukan lewat pengujian, semuanya bermuara pada satu hal:
+**titik cuplikan lingkaran dibuat pada sudut mutlak**, sehingga tidak ikut berputar
+bersama gambarnya.
+
+| Sumber | Perbaikan |
+|---|---|
+| jarak diukur ke titik cuplikan lawan | jarak dihitung tepat ke goresannya (titik ke ruas, titik ke lingkaran) |
+| sisi yang dicuplik kebetulan lingkaran | yang dicuplik selalu sisi yang bukan lingkaran; sepasang lingkaran tak punya ujung, jadi simpulnya nol |
+| pecahan "di dalam" dicuplik dari lingkaran | untuk lingkaran dihitung tepat dari jari-jari dan jaraknya |
+
+Satu lagi bukan soal pencuplikan melainkan **uji setajam pisau**: ujung tali busur duduk
+tepat di keliling lingkarannya, dan di situ "di dalam atau di luar" ditentukan galat
+pembulatan. Dengan cuplikan 15 titik, kedua ujung itu sendirian bernilai 13% — cukup
+untuk melempar pecahannya melewati ambang 0,9, sehingga tali yang sama terbaca
+"seluruhnya di dalam" pada satu sudut dan "menyembul keluar" pada sudut lain. Titik yang
+persis di tepi kini dihitung sebagai di dalam, dan itu pula yang dilihat mata: tali itu
+BERAKHIR di keliling, bukan melewatinya.
+
+Diperiksa pada **2.560 uji** (8 keluarga × 40 bentuk × 7 sudut putar + pencerminan):
+0 menyimpang. Sebelum keempat perbaikan itu, 116 menyimpang.
 
 Pada **mudah** dan **sedang**, pengecoh yang mudah dicoret justru yang diinginkan —
 itulah yang membedakan ketiga tingkat. Diperiksa pada 64 soal mudah: 62 di antaranya
@@ -384,7 +454,7 @@ Pilihan terakhir tersimpan otomatis di peramban.
 | | |
 |---|---|
 | satu bentuk | 2,3 ms |
-| satu soal (kesesuaian) | 21–25 ms |
+| satu soal (kesesuaian) | 20–25 ms |
 | satu soal (tipe lain) | 4–7 ms |
 | paket 100 soal campuran | 0,97 detik |
 | penyusunan SVG 100 soal | 0,92 detik (11,5 KB SVG per soal) |
@@ -417,7 +487,7 @@ antarmuka.
 ## Pemeriksaan mandiri
 
 ```bash
-node uji/bentuk.js 400        # mesin bentuk & pembanding rotasi
+node uji/bentuk.js 400        # mesin bentuk, pembanding rotasi, struktur hubungan
 ```
 
 ```bash

@@ -525,6 +525,259 @@
     return jml / p.length;
   }
 
+  // ------------------------------------------------------- struktur hubungan
+
+  /**
+   * Apakah sebuah titik berada di dalam unsur tertutup `wadah`?
+   * Poligon diuji dengan pancaran sinar; lingkaran cukup dengan jaraknya.
+   */
+  function didalam(p, wadah) {
+    if (wadah.jenis === 'bulat') {
+      return Math.hypot(p[0] - wadah.pusat[0], p[1] - wadah.pusat[1]) < wadah.jari;
+    }
+    var t = wadah.titik, n = t.length, masuk = false;
+    for (var i = 0, j = n - 1; i < n; j = i++) {
+      var yi = t[i][1], yj = t[j][1];
+      if ((yi > p[1]) === (yj > p[1])) continue;
+      var x = (t[j][0] - t[i][0]) * (p[1] - yi) / (yj - yi) + t[i][0];
+      if (p[0] < x) masuk = !masuk;
+    }
+    return masuk;
+  }
+
+  function bisaMewadahi(u) {
+    return u.jenis === 'bulat' || (u.jenis === 'garis' && u.tutup);
+  }
+
+  /** Jarak titik ke sebuah ruas garis. */
+  function jarakKeRuas(p, a, b) {
+    var vx = b[0] - a[0], vy = b[1] - a[1];
+    var pjg = vx * vx + vy * vy;
+    var t = pjg < 1e-12 ? 0 : ((p[0] - a[0]) * vx + (p[1] - a[1]) * vy) / pjg;
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+    return Math.hypot(p[0] - (a[0] + vx * t), p[1] - (a[1] + vy * t));
+  }
+
+  /**
+   * Jarak titik ke GORESAN sebuah unsur, dihitung tepat.
+   *
+   * Sempat dihitung sebagai jarak ke titik-titik cuplikan unsur itu, dan
+   * ternyata keliru: cuplikan lingkaran dibuat pada sudut MUTLAK 0, 2pi/n, ...
+   * sehingga titik cuplikannya TIDAK ikut berputar bersama gambarnya. Akibatnya
+   * ujung tali busur kadang terhitung menempel di lingkaran dan kadang tidak,
+   * semata-mata bergantung pada sudut gambarnya — dan struktur hubungan yang
+   * seharusnya kebal putaran jadi berubah-ubah. Dihitung tepat begini, jaraknya
+   * murni sifat geometri dan kebal putaran.
+   */
+  function jarakKeUnsur(p, u) {
+    if (u.jenis === 'bulat') {
+      return Math.abs(Math.hypot(p[0] - u.pusat[0], p[1] - u.pusat[1]) - u.jari);
+    }
+    var t = u.titik, m = t.length, min = Infinity;
+    var batas = u.tutup ? m : m - 1;
+    for (var k = 0; k < batas; k++) {
+      min = Math.min(min, jarakKeRuas(p, t[k], t[(k + 1) % m]));
+    }
+    return min;
+  }
+
+  /**
+   * STRUKTUR HUBUNGAN antar unsur: mana menyentuh mana, dan apa di dalam apa.
+   *
+   * Inilah yang dibaca mata SEKILAS, tanpa memutar gambar sedikit pun. Tali
+   * busur yang ujungnya menempel pada dua sudut segienam, lima batang yang
+   * bertemu di satu titik, segitiga kecil yang terkurung di dalam bingkai —
+   * semuanya tidak berubah saat gambar diputar. Karena itu kalau sebuah
+   * pengecoh punya struktur hubungan yang berbeda, ia bisa dicoret tanpa
+   * membayangkan putaran sama sekali, betapapun daftar unsurnya sama.
+   *
+   * Dua hal yang diukur untuk setiap pasang unsur:
+   *
+   *   SIMPUL    berapa DAERAH terpisah tempat keduanya BERSAMBUNG di ujung.
+   *             Hanya sentuhan yang mengenai ujung salah satu garis yang
+   *             dihitung — itulah sambungan yang terbaca sekilas: lima batang
+   *             yang bertemu di satu pusat, tali busur yang ujungnya menempel
+   *             di keliling lingkaran, gigi sisir yang menancap pada tulangnya.
+   *
+   *             Persilangan di TENGAH garis sengaja tidak dihitung. Dua tali
+   *             busur yang kebetulan berpotongan di dalam lingkaran memang
+   *             berbeda polanya, tetapi menghitung persilangan semacam itu
+   *             menuntut penelusuran satu per satu — sama beratnya dengan
+   *             membayangkan putaran, jadi ia bukan jalan pintas yang perlu
+   *             ditutup. Kalau ikut dihitung, keluarga `silang` nyaris tak
+   *             bisa dipakai pada tingkat sulit: hanya 11 dari 40 bentuk yang
+   *             sanggup memberi empat pengecoh.
+   *   WADAH     'd' seluruhnya di dalam, 'l' seluruhnya di luar, 's' separuh
+   *             menyembul keluar. Inilah yang menangkap tali busur yang
+   *             ujungnya keluar dari segienamnya.
+   *
+   * Keduanya diukur dengan ambang jarak, bukan perpotongan tepat, karena yang
+   * penting apa yang tampak menyatu di mata: batang yang berhenti sepersekian
+   * milimeter sebelum bertemu tetap terbaca bertemu.
+   */
+  function strukturKey(fig) {
+    var n = fig.unsur.length;
+    if (!n) return '';
+    var jang = jangkauan(fig) || 1;
+    var tau = jang * 0.05;
+    var cuplik = fig.unsur.map(function (u) { return sampelBatas({ unsur: [u] }, 44); });
+    // Ujung tiap unsur: garis terbuka punya dua, poligon tertutup dan lingkaran
+    // tidak punya ujung sama sekali.
+    var ujung = fig.unsur.map(function (u) {
+      if (u.jenis === 'bulat' || u.tutup) return [];
+      return [u.titik[0], u.titik[u.titik.length - 1]];
+    });
+
+    /**
+     * Jumlah daerah SAMBUNGAN di ujung antara dua unsur.
+     *
+     * Sisi yang DICUPLIK selalu yang bukan lingkaran. Titik cuplikan lingkaran
+     * dibuat pada sudut mutlak sehingga tidak ikut berputar bersama gambarnya;
+     * mencuplik sisi itu membuat hasilnya berubah-ubah menurut sudut gambar.
+     * Sisi garis dicuplik menurut panjang busurnya sendiri, jadi ia berputar
+     * bersama gambarnya dan hasilnya kebal putaran. Sepasang lingkaran tidak
+     * pernah bersambungan di ujung — lingkaran tidak punya ujung — jadi
+     * jawabannya nol tanpa perlu dihitung.
+     */
+    function simpul(iA, iB) {
+      var uA = fig.unsur[iA], uB = fig.unsur[iB];
+      if (uA.jenis === 'bulat' && uB.jenis === 'bulat') return 0;
+      var a, lawan;
+      if (uA.jenis === 'bulat') { a = cuplik[iB]; lawan = uA; }
+      else { a = cuplik[iA]; lawan = uB; }
+      var tepi = ujung[iA].concat(ujung[iB]);
+      if (!tepi.length) return 0;
+
+      var dekat = [];
+      for (var i = 0; i < a.length; i++) {
+        if (jarakKeUnsur(a[i], lawan) >= tau) continue;
+        // Hanya dihitung bila titik sentuh ini dekat dengan ujung salah satu.
+        var diUjung = tepi.some(function (e) {
+          return Math.hypot(a[i][0] - e[0], a[i][1] - e[1]) < tau * 2;
+        });
+        if (diUjung) dekat.push(a[i]);
+      }
+      if (!dekat.length) return 0;
+      // Gugus tunggal-hubung: titik yang berjarak kurang dari 2,5 tau dianggap
+      // satu daerah sentuhan yang sama.
+      var sisa = dekat.slice(), gugus = 0;
+      while (sisa.length) {
+        var antre = [sisa.pop()];
+        gugus++;
+        while (antre.length) {
+          var p = antre.pop();
+          for (var k = sisa.length - 1; k >= 0; k--) {
+            if (Math.hypot(sisa[k][0] - p[0], sisa[k][1] - p[1]) < tau * 2.5) {
+              antre.push(sisa[k]);
+              sisa.splice(k, 1);
+            }
+          }
+        }
+      }
+      return Math.min(gugus, 4);          // lebih dari empat tidak lagi bermakna
+    }
+
+    /**
+     * Seberapa jauh unsur A berada di dalam unsur B:
+     * 'd' seluruhnya di dalam, 'l' seluruhnya di luar, 's' menyembul separuh.
+     *
+     * Bila A sebuah lingkaran, jawabannya dihitung TEPAT dari jari-jari dan
+     * jaraknya, bukan dari titik cuplikan. Cuplikan lingkaran dibuat pada sudut
+     * mutlak sehingga tidak ikut berputar bersama gambarnya, dan pecahan "di
+     * dalam" yang dihitung darinya bergoyang mengikuti sudut gambar — persis
+     * sisa penyimpangan yang masih tertinggal setelah `simpul` dibetulkan.
+     */
+    function wadah(iA, uB) {
+      if (!bisaMewadahi(uB)) return '-';
+      var uA = fig.unsur[iA];
+
+      if (uA.jenis === 'bulat') {
+        if (uB.jenis === 'bulat') {
+          var d = Math.hypot(uA.pusat[0] - uB.pusat[0], uA.pusat[1] - uB.pusat[1]);
+          if (d + uA.jari <= uB.jari) return 'd';
+          if (d >= uA.jari + uB.jari) return 'l';
+          return 's';
+        }
+        // Wadah bersudut: jarak pusat A ke tepi B dibandingkan jari-jarinya.
+        var tepiMin = Infinity, t = uB.titik, m = t.length;
+        for (var k = 0; k < m; k++) {
+          tepiMin = Math.min(tepiMin, jarakKeRuas(uA.pusat, t[k], t[(k + 1) % m]));
+        }
+        var pusatMasuk = didalam(uA.pusat, uB);
+        if (tepiMin >= uA.jari) return pusatMasuk ? 'd' : 'l';
+        return 's';
+      }
+
+      /*
+       * Titik yang PERSIS di tepi dihitung sebagai di dalam.
+       *
+       * Ujung tali busur duduk tepat di keliling lingkarannya, dan di situ
+       * `didalam` adalah uji setajam pisau: galat pembulatan sepersekian
+       * triliun menentukan jawabannya. Dengan cuplikan sebanyak 15 titik,
+       * kedua ujung itu sendirian bernilai 13% — cukup untuk melempar
+       * pecahannya melewati ambang 0,9, sehingga tali yang sama terbaca
+       * "seluruhnya di dalam" pada satu sudut dan "menyembul keluar" pada
+       * sudut lain. Ambang jarak kecil membuat jawabannya tegas, dan itu pula
+       * yang dilihat mata: tali itu BERAKHIR di keliling, bukan melewatinya.
+       */
+      var tepiEps = jang * 0.01;
+      var titikA = cuplik[iA];
+      var masuk = 0;
+      titikA.forEach(function (p) {
+        if (didalam(p, uB) || jarakKeUnsur(p, uB) < tepiEps) masuk++;
+      });
+      var f = masuk / titikA.length;
+      return f >= 0.9 ? 'd' : (f <= 0.1 ? 'l' : 's');
+    }
+
+    var uraian = [];
+    for (var i = 0; i < n; i++) {
+      var relasi = [];
+      for (var j = 0; j < n; j++) {
+        if (i === j) continue;
+        relasi.push(tandaUnsur(fig.unsur[j]) + '~' +
+          simpul(i, j) +
+          '~' + wadah(i, fig.unsur[j]));
+      }
+      relasi.sort();
+      uraian.push(tandaUnsur(fig.unsur[i]) + '[' + relasi.join(',') + ']');
+    }
+    uraian.sort();
+    return uraian.join(';');
+  }
+
+  /**
+   * Titik tumpu sebuah unsur: pusat daerah tempat ia bersentuhan dengan unsur
+   * lain. Memutar unsur terhadap titik ini MEMPERTAHANKAN sentuhannya —
+   * batang tetap bertemu di pusat, tali tetap menempel di sudutnya — sehingga
+   * yang berubah hanya sudutnya, persis yang menuntut penjawab membayangkan
+   * putaran. Mengembalikan null bila unsur itu tidak menyentuh apa pun (silakan
+   * diputar terhadap pusat gambar) atau menyentuh di lebih dari satu daerah.
+   */
+  function titikTumpu(fig, idx) {
+    var jang = jangkauan(fig) || 1;
+    var tau = jang * 0.05;
+    var a = sampelBatas({ unsur: [fig.unsur[idx]] }, 44);
+    var kena = [];
+    fig.unsur.forEach(function (u, j) {
+      if (j === idx) return;
+      a.forEach(function (p) {
+        if (jarakKeUnsur(p, u) < tau) kena.push(p);
+      });
+    });
+    if (!kena.length) return null;
+    var sx = 0, sy = 0;
+    kena.forEach(function (p) { sx += p[0]; sy += p[1]; });
+    var pusat = [sx / kena.length, sy / kena.length];
+    // Kalau sentuhannya tersebar jauh dari satu titik, memutar terhadap
+    // rata-ratanya justru merusak semua sentuhan itu sekaligus.
+    var jauh = 0;
+    kena.forEach(function (p) {
+      jauh = Math.max(jauh, Math.hypot(p[0] - pusat[0], p[1] - pusat[1]));
+    });
+    return jauh > jang * 0.18 ? null : pusat;
+  }
+
   /** Jarak chamfer dua arah antara dua unsur, dalam satuan mutlak. */
   function bedaUnsur(u1, u2) {
     var a = sampelBatas({ unsur: [u1] }, 30), b = sampelBatas({ unsur: [u2] }, 30);
@@ -544,6 +797,8 @@
     unsurSama: unsurSama, samaPersis: samaPersis, calonSudut: calonSudut,
     sudutPutarKe: sudutPutarKe, adalahRotasi: adalahRotasi, rapikanSudut: rapikanSudut,
     ordeSimetri: ordeSimetri, kiral: kiral,
+    strukturKey: strukturKey, titikTumpu: titikTumpu, didalam: didalam,
+    jarakKeUnsur: jarakKeUnsur, jarakKeRuas: jarakKeRuas,
     bedaBentuk: bedaBentuk, bedaUnsur: bedaUnsur,
     norm360: norm360, derajat: derajat, radian: radian
   };

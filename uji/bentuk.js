@@ -111,5 +111,34 @@ Object.keys(sebab).sort(function (a, b) { return sebab[b] - sebab[a]; }).forEach
 cek('penyaring memang menggigit', mentahTolak > 0,
   'tidak ada bentuk mentah yang ditolak — penyaringnya tidak berguna?');
 
+// ------------------------------- 7. struktur hubungan kebal putaran & cermin
+console.log('\n7. Struktur hubungan antar unsur kebal putaran');
+/*
+ * Struktur hubungan — mana bersambung dengan mana, apa di dalam apa — dipakai
+ * menyaring pengecoh tingkat sulit, jadi ia HARUS tidak berubah saat gambarnya
+ * diputar. Kalau ia bergoyang, kunci jawabannya sendiri bisa dianggap
+ * berstruktur beda dari gambar acuannya dan soalnya gagal disusun.
+ */
+var strukturBeda = 0, strukturUji = 0;
+var sudutStruktur = [13, 37, 90, 137, 225, 311, 349];
+Fam.KELUARGA.forEach(function (k) {
+  for (var i = 0; i < 40; i++) {
+    var f = Fam.bangkitkan(k.id, 500000 + i * 97);
+    var kunciS = F.strukturKey(f);
+    sudutStruktur.forEach(function (d) {
+      strukturUji++;
+      if (F.strukturKey(F.putar(f, d)) !== kunciS) {
+        strukturBeda++;
+        if (strukturBeda < 4) console.log('  ' + k.id + ' benih ' + (500000 + i * 97) + ' pada ' + d + '°');
+      }
+    });
+    strukturUji++;
+    if (F.strukturKey(F.cermin(f)) !== kunciS) strukturBeda++;
+  }
+});
+cek('struktur kebal putaran', strukturBeda === 0, strukturBeda + ' dari ' + strukturUji + ' menyimpang');
+console.log('   ' + strukturUji + ' uji (8 keluarga x 40 bentuk x 8 transformasi): ' +
+  strukturBeda + ' menyimpang');
+
 console.log('\n' + (gagal ? gagal + ' PEMERIKSAAN GAGAL' : 'Semua pemeriksaan lulus.'));
 process.exit(gagal ? 1 : 0);

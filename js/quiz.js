@@ -83,7 +83,8 @@
     // Selisih jangkauan pengecoh terhadap kunci yang masih boleh. Gambar yang
     // ukurannya berubah langsung terlihat berbeda tanpa perlu diputar.
     jangkauan: 0.06,
-    coba: 60          // percobaan mencari satu pengecoh sebelum menyerah
+    coba: 60,         // percobaan mencari satu pengecoh sebelum menyerah
+    cobaProfil: 150   // jatah saat profilnya wajib sama (tingkat sulit)
   };
 
   /**
@@ -98,7 +99,8 @@
    * Keempatnya tetap dipakai pada tingkat mudah dan sedang, karena di situ
    * pengecoh yang mudah dicoret memang yang diinginkan.
    */
-  var CACAT_KAKU = ['cermin', 'putarUnsur', 'putarSendiri', 'geserUnsur', 'cerminUnsur'];
+  var CACAT_KAKU = ['cermin', 'putarTumpu', 'putarUnsur', 'putarSendiri',
+    'geserUnsur', 'cerminUnsur'];
 
   /**
    * Tingkat mana yang menuntut kelima opsi berprofil sama.
@@ -172,7 +174,10 @@
   function profilCocok(A, B) {
     if (F.tandaBentuk(A) !== F.tandaBentuk(B)) return false;
     var ja = F.jangkauan(A), jb = F.jangkauan(B);
-    return Math.abs(ja - jb) <= AMBANG.jangkauan * Math.max(ja, jb);
+    if (Math.abs(ja - jb) > AMBANG.jangkauan * Math.max(ja, jb)) return false;
+    // Struktur hubungan antar unsur — mana menyentuh mana, apa di dalam apa —
+    // juga tidak berubah saat gambar diputar, jadi ia pun harus sama.
+    return F.strukturKey(A) === F.strukturKey(B);
   }
 
   /**
@@ -337,6 +342,93 @@
     };
   }
 
+  /**
+   * Putar satu unsur terhadap TITIK PUTAR yang mempertahankan sentuhannya.
+   *
+   * Inilah pengecoh yang benar-benar menuntut penjawab membayangkan putaran.
+   * Memutar sebuah unsur terhadap pusat gambar merusak hubungannya dengan
+   * unsur lain — tali busur lepas dari sudut segienamnya, batang tak lagi
+   * bertemu di satu titik — dan kerusakan itu terbaca sekilas. Di sini titik
+   * putarnya dipilih supaya hubungan itu BERTAHAN:
+   *
+   *   1. titik tumpu, yaitu pusat daerah tempat unsur ini menyentuh unsur lain
+   *      (lima batang yang bertemu di satu titik tetap bertemu di sana);
+   *   2. pusat unsur tertutup yang mewadahinya (tali busur yang diputar
+   *      terhadap pusat lingkaran, kedua ujungnya tetap di keliling);
+   *   3. pusat gambar, untuk unsur yang memang tidak menyentuh apa pun.
+   *
+   * Yang berubah tinggal sudutnya terhadap unsur lain — dan itu hanya bisa
+   * dibandingkan dengan menumpangkan kedua gambar di kepala.
+   */
+  function cacatPutarTumpu(fig, a) {
+    var idx = a.bulat(0, fig.unsur.length - 1);
+    var u = fig.unsur[idx];
+    if (u.jenis === 'bulat') return null;
+
+    var BEBAS = [25, 35, 45, 60, 75, 90, 110];
+    var jang = F.jangkauan(fig), tau = jang * 0.05;
+    var titikU = F.sampelBatas({ unsur: [u] }, 40);
+    var calon = [];
+
+    var tumpu = F.titikTumpu(fig, idx);
+    if (tumpu) calon.push({ p: tumpu, sudut: BEBAS });
+
+    /*
+     * Pusat sebuah unsur tertutup hanya menjadi titik putar yang sah bila unsur
+     * ini MEMANG bersandar padanya — menyentuhnya atau terkurung di dalamnya.
+     * Semula setiap unsur tertutup ikut diundi, termasuk titik-titik kecil yang
+     * tak ada hubungannya, dan tiga dari empat undian merusak struktur; pada
+     * keluarga `silang` hanya 8 dari 60 bentuk yang lalu sanggup memberi empat
+     * pengecoh.
+     *
+     * Sudutnya pun tidak bebas untuk wadah bersudut: memutar tali busur
+     * sembarang derajat terhadap pusat segienam melemparkan ujungnya keluar
+     * sisi, sebab jarak sudut ke pusat lebih jauh daripada jarak sisi ke pusat.
+     * Kelipatan 360/n memetakan sudut ke sudut, sehingga talinya berpindah
+     * menghubungkan PASANGAN SUDUT LAIN — persis variasi yang wajar.
+     */
+    fig.unsur.forEach(function (v, j) {
+      if (j === idx) return;
+      var wadah = v.jenis === 'bulat' || v.tutup;
+      if (!wadah) return;
+      var titikV = F.sampelBatas({ unsur: [v] }, 40);
+      var dalam = 0, sentuh = false;
+      titikU.forEach(function (q) {
+        if (F.didalam(q, v)) dalam++;
+        if (sentuh) return;
+        for (var k = 0; k < titikV.length; k++) {
+          if (Math.hypot(q[0] - titikV[k][0], q[1] - titikV[k][1]) < tau) { sentuh = true; return; }
+        }
+      });
+      if (!sentuh && dalam < titikU.length * 0.9) return;
+      var sudut = BEBAS;
+      if (v.jenis === 'garis') {
+        sudut = [];
+        var langkah = 360 / v.titik.length;
+        for (var m = 1; m < v.titik.length; m++) sudut.push(langkah * m);
+      }
+      calon.push({ p: F.pusatUnsur(v), sudut: sudut });
+    });
+
+    if (!calon.length) calon.push({ p: [0, 0], sudut: BEBAS });
+
+    var pilih = a.pilih(calon);
+    var p = pilih.p;
+    var d = a.pilih(pilih.sudut) * a.tanda();
+    var rad = d * Math.PI / 180, c = Math.cos(rad), s = Math.sin(rad);
+    var h = F.salin(fig);
+    h.unsur[idx].titik = h.unsur[idx].titik.map(function (t) {
+      var x = t[0] - p[0], y = t[1] - p[1];
+      return [p[0] + x * c - y * s, p[1] + x * s + y * c];
+    });
+    return {
+      fig: F.pusatkan(h), jenis: 'putarTumpu', idx: idx, sorot: idx,
+      alasan: 'sudut ' + namaUnsur(fig, idx) + ' terhadap unsur lain berbeda. ' +
+        'Ia masih menempel pada tempat yang sama, tetapi arahnya sudah berubah — ' +
+        'pada putaran yang benar, sudut antar unsur tidak boleh berubah sama sekali.'
+    };
+  }
+
   function cacatCerminUnsur(fig, a) {
     var calon = [];
     fig.unsur.forEach(function (u, i) { if (u.jenis === 'garis' && u.titik.length > 2) calon.push(i); });
@@ -361,7 +453,8 @@
     tambahUnsur: cacatTambahUnsur,
     isiUnsur: cacatIsiUnsur,
     geserUnsur: cacatGeserUnsur,
-    cerminUnsur: cacatCerminUnsur
+    cerminUnsur: cacatCerminUnsur,
+    putarTumpu: cacatPutarTumpu
   };
 
   /**
@@ -371,11 +464,11 @@
    */
   var PRIORITAS = {
     mudah: ['hapusUnsur', 'tambahUnsur', 'skalaUnsur', 'cermin', 'geserUnsur',
-      'putarUnsur', 'isiUnsur', 'putarSendiri', 'cerminUnsur'],
-    sedang: ['cermin', 'putarUnsur', 'skalaUnsur', 'geserUnsur', 'isiUnsur',
-      'hapusUnsur', 'putarSendiri', 'tambahUnsur', 'cerminUnsur'],
-    sulit: ['putarSendiri', 'cerminUnsur', 'isiUnsur', 'putarUnsur', 'geserUnsur',
-      'cermin', 'skalaUnsur', 'tambahUnsur', 'hapusUnsur']
+      'putarUnsur', 'isiUnsur', 'putarSendiri', 'cerminUnsur', 'putarTumpu'],
+    sedang: ['cermin', 'putarTumpu', 'putarUnsur', 'skalaUnsur', 'geserUnsur',
+      'isiUnsur', 'hapusUnsur', 'putarSendiri', 'tambahUnsur', 'cerminUnsur'],
+    sulit: ['putarTumpu', 'cermin', 'putarSendiri', 'cerminUnsur', 'putarUnsur',
+      'geserUnsur', 'isiUnsur', 'skalaUnsur', 'tambahUnsur', 'hapusUnsur']
   };
 
   // -------------------------------------------------------- pemilih pengecoh
@@ -408,16 +501,46 @@
       urut = urut.filter(function (n) { return CACAT_KAKU.indexOf(n) >= 0; });
     }
 
-    for (var c = 0; c < AMBANG.coba; c++) {
+    /*
+     * Sebuah strategi bisa MUSTAHIL bagi bentuk tertentu, bukan sekadar sial.
+     * Pada keluarga `silang` misalnya, `cerminUnsur` menuntut garis berlebih
+     * dari dua titik sedangkan seluruh talinya hanya dua titik, dan
+     * `putarSendiri` selalu melepas ujung tali dari kelilingnya. Keduanya
+     * gagal 300 dari 300 percobaan, namun tetap kebagian sepertiga jatah
+     * percobaan dan membuat penyusunan soalnya gagal seluruhnya (8 dari 8).
+     * Strategi yang gagal berturut-turut karena itu DICORET dari daftar.
+     */
+    var gagalBeruntun = {};
+    var mati = {};
+    function tandaiGagal(nama) {
+      gagalBeruntun[nama] = (gagalBeruntun[nama] || 0) + 1;
+      if (gagalBeruntun[nama] >= 7) mati[nama] = true;
+    }
+
+    // Syarat profil memangkas calon jauh lebih banyak, jadi jatah percobaannya
+    // dilipatkan; tanpa itu bentuk yang strateginya sedikit tak pernah selesai.
+    var cobaMaks = opsi.profil ? AMBANG.cobaProfil : AMBANG.coba;
+
+    for (var c = 0; c < cobaMaks; c++) {
       // Dua putaran pertama mengikuti prioritas tingkat kesulitan; sesudah itu
       // strategi apa pun boleh, supaya soal tidak gagal hanya karena strategi
       // favorit tingkat itu kebetulan tidak cocok untuk bentuk ini.
-      var daftar = c < urut.length * 2 ? urut : a.kocok(urut);
+      var hidup = urut.filter(function (n) { return !mati[n]; });
+      if (!hidup.length) return null;
+      var daftar = c < hidup.length * 2 ? hidup : a.kocok(hidup);
       var nama = daftar[c % daftar.length];
-      if (c < AMBANG.coba * 0.67 && terpakai.indexOf(nama) >= 0) continue;
+      /*
+       * Strategi yang sudah dipakai dihindari hanya pada sepertiga percobaan
+       * pertama, bukan dua pertiga. Keragaman kalimat alasan sudah dijamin
+       * terpisah oleh `hindariAlasan`, sehingga larangan yang panjang di sini
+       * hanya membuang jatah percobaan — dan pada bentuk yang strateginya
+       * memang sedikit (keluarga `silang` hanya punya empat yang bisa dipakai)
+       * ia membuat soalnya gagal disusun sama sekali.
+       */
+      if (c < cobaMaks * 0.30 && terpakai.indexOf(nama) >= 0) continue;
 
       var hasil = CACAT[nama](acuan, a);
-      if (!hasil) continue;
+      if (!hasil) { tandaiGagal(nama); continue; }
 
       /*
        * Dua pengecoh tidak boleh berbagi KALIMAT ALASAN yang sama.
@@ -429,7 +552,7 @@
        * sudah dipakai ditolak sejak awal; kalau ternyata mentok, `buat()` akan
        * mengulang soalnya dengan benih berikutnya.
        */
-      if (alasanTerpakai.indexOf(hasil.alasan) >= 0) continue;
+      if (alasanTerpakai.indexOf(hasil.alasan) >= 0) { tandaiGagal(nama); continue; }
 
       // Urutan pemeriksaan sengaja dari yang termurah ke yang termahal.
       // `adalahRotasi` biasanya berhenti seketika di saringan tanda bentuk,
@@ -440,29 +563,30 @@
       //     dari geometrinya, bukan sekadar percaya pada daftar CACAT_KAKU —
       //     kalau kelak ada strategi baru yang keliru digolongkan kaku, aturan
       //     ini tetap menangkapnya.
-      if (opsi.profil && !profilCocok(hasil.fig, opsi.profil)) continue;
+      if (opsi.profil && !profilCocok(hasil.fig, opsi.profil)) { tandaiGagal(nama); continue; }
 
       // (1) Jaminan pokok: pengecoh tidak boleh terhubung putaran dengan acuan.
-      if (F.adalahRotasi(hasil.fig, acuan)) continue;
+      if (F.adalahRotasi(hasil.fig, acuan)) { tandaiGagal(nama); continue; }
 
       // (2) Tidak boleh kembar dengan pilihan yang sudah ada.
       var kembar = false;
       for (var i = 0; i < sudahAda.length; i++) {
         if (F.adalahRotasi(hasil.fig, sudahAda[i])) { kembar = true; break; }
       }
-      if (kembar) continue;
+      if (kembar) { tandaiGagal(nama); continue; }
 
       // (3) Harus tetap terbaca meski sengaja cacat.
-      if (!layakPengecoh(hasil.fig)) continue;
+      if (!layakPengecoh(hasil.fig)) { tandaiGagal(nama); continue; }
 
       // (4) Bedanya harus terlihat mata, tetapi tidak mencolok berlebihan.
       // Ambang khas tingkat kesulitan dilonggarkan ke ambang dasar pada
       // sepertiga percobaan terakhir: lebih baik satu pengecoh yang sedikit
       // lebih halus daripada gagal menyusun soalnya sama sekali.
-      var ambangKini = c < AMBANG.coba * 0.67 ? minBeda : AMBANG.bedaMinSulit;
+      var ambangKini = c < cobaMaks * 0.67 ? minBeda : AMBANG.bedaMinSulit;
       var beda = F.bedaBentuk(hasil.fig, acuan);
-      if (beda < ambangKini || beda > AMBANG.bedaMaks) continue;
+      if (beda < ambangKini || beda > AMBANG.bedaMaks) { tandaiGagal(nama); continue; }
 
+      gagalBeruntun[nama] = 0;
       hasil.beda = beda;
       hasil.longgar = ambangKini < minBeda;
       return hasil;
