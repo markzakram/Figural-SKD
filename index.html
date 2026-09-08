@@ -21,7 +21,7 @@
 <div id="help" class="help" hidden>
   <ol>
     <li><b>Pilih submateri.</b> Kesesuaian, Ketidaksamaan, Analogi, atau Serial &mdash; keempatnya mengikuti bab Figural pada modul.</li>
-    <li><b>Pilih keluarga bentuk.</b> Garis bersarang, bangun datar berpenanda, kisi titik, atau panah &amp; kait. Pilih <i>Campur</i> agar setiap soal memakai keluarga yang berbeda.</li>
+    <li><b>Centang keluarga bentuk.</b> Boleh lebih dari satu &mdash; soal hanya dibuat dari keluarga yang tercentang, dan dipakai bergantian. Tekan <i>Pilih semua</i> untuk memakai kedelapannya.</li>
     <li><b>Acak bentuk.</b> Setiap bentuk lahir dari sebuah nomor benih; benih yang sama selalu menghasilkan bentuk yang sama, jadi soal bisa dibuat ulang persis dari nomornya.</li>
     <li><b>Buat soal.</b> Program mengambil satu putaran sebagai kunci, lalu membuat pengecoh yang dijamin BUKAN putaran gambar acuan. Bayangan cermin selalu dihitung salah.</li>
     <li><b>Buat sepaket dan unduh.</b> Isi jumlah soal, tekan <i>Generate</i>, lalu unduh PDF (siap cetak) atau Word (siap sunting).</li>
@@ -36,8 +36,11 @@
     <div class="row wrap gap-s" id="tipe-picker"></div>
     <p class="hint" id="tipe-perintah"></p>
 
-    <h2><span class="step">2</span> Keluarga bentuk</h2>
+    <h2><span class="step">2</span> Keluarga bentuk
+      <span class="tip" title="Centang satu atau beberapa keluarga. Soal hanya dibuat dari yang tercentang.">?</span>
+    </h2>
     <div class="row wrap gap-s" id="keluarga-picker"></div>
+    <p class="hint" id="keluarga-hint"></p>
 
     <label class="field">
       <span>Tingkat kesulitan</span>
@@ -127,7 +130,7 @@
       <label class="num-field" title="Keluarga bentuk untuk seluruh paket">
         <span>Bentuk</span>
         <select id="batch-keluarga">
-          <option value="ikut" selected>Ikuti pilihan di atas</option>
+          <option value="ikut" selected>Ikuti centang di atas</option>
           <option value="campur">Campur semua keluarga</option>
         </select>
       </label>

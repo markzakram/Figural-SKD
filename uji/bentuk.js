@@ -140,5 +140,53 @@ cek('struktur kebal putaran', strukturBeda === 0, strukturBeda + ' dari ' + stru
 console.log('   ' + strukturUji + ' uji (8 keluarga x 40 bentuk x 8 transformasi): ' +
   strukturBeda + ' menyimpang');
 
+// ------------------------------- 8. keluarga bisa dipilih berganda
+console.log('\n8. Pilihan keluarga berganda dihormati');
+/*
+ * Pengguna mencentang beberapa keluarga sekaligus. Yang diuji di sini bukan
+ * antarmukanya melainkan janjinya: bentuk yang lahir HANYA berasal dari
+ * keluarga yang diminta, dan tak satu pun keluarga lain menyelinap masuk.
+ */
+var kombinasi = [
+  ['sarang'],
+  ['panah', 'silang'],
+  ['datar', 'kisi', 'blok'],
+  Fam.KELUARGA.map(function (k) { return k.id; })
+];
+var bocor = 0, kurang = 0;
+kombinasi.forEach(function (minta) {
+  var muncul = {};
+  for (var i = 0; i < 200; i++) {
+    var f = Fam.bangkitkan(minta, 820000 + i * 7);
+    muncul[f.keluarga] = (muncul[f.keluarga] || 0) + 1;
+    if (minta.indexOf(f.keluarga) < 0) bocor++;
+  }
+  var hilang = minta.filter(function (id) { return !muncul[id]; });
+  if (hilang.length) kurang += hilang.length;
+  console.log('   [' + minta.join(', ') + '] -> ' +
+    Object.keys(muncul).map(function (k) { return k + ':' + muncul[k]; }).join('  ') +
+    (hilang.length ? '   TIDAK MUNCUL: ' + hilang.join(', ') : ''));
+});
+cek('tidak ada keluarga menyelinap', bocor === 0, bocor + ' bentuk di luar daftar');
+cek('semua yang diminta terpakai', kurang === 0, kurang + ' keluarga tak pernah muncul');
+
+// Masukan yang aneh tidak boleh menghentikan generator.
+var tahanBanting = [
+  ['daftar kosong', []],
+  ['id tak dikenal', ['tidak-ada']],
+  ['campuran sah & ngawur', ['sarang', 'ngawur']],
+  ['teks lama', 'campur'],
+  ['satu teks', 'kisi']
+];
+var rusak = 0;
+tahanBanting.forEach(function (par) {
+  try {
+    var f = Fam.bangkitkan(par[1], 991000);
+    if (!f || !f.unsur.length) { rusak++; console.log('  GAGAL ' + par[0]); }
+  } catch (e) { rusak++; console.log('  GALAT ' + par[0] + ': ' + e.message); }
+});
+cek('masukan aneh tetap aman', rusak === 0, rusak + ' masukan membuat generator gagal');
+console.log('   5 bentuk masukan diterima tanpa galat (daftar kosong, id ngawur, teks lama)');
+
 console.log('\n' + (gagal ? gagal + ' PEMERIKSAAN GAGAL' : 'Semua pemeriksaan lulus.'));
 process.exit(gagal ? 1 : 0);

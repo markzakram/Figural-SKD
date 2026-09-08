@@ -44,8 +44,20 @@ Bentuknya **dibangkitkan, bukan digambar manual**, dari sebuah nomor benih.
 | **Blok bertumpuk** | 2–4 segi empat tertutup pada sudut dan letak berbeda yang bertindihan sebagian | berbeda dari bersarang: yang dibaca letak tumpukannya |
 | **Lingkaran & tali silang** | satu lingkaran besar, 3–4 tali busur berujung di kelilingnya, plus 1–2 titik di dalam | satu-satunya keluarga bergaris lengkung, jadi sekilas langsung berbeda dari tujuh lainnya |
 
-Pilih *Campur* agar keluarganya berganti-ganti antar soal. Diukur pada 400 bentuk,
-kedelapan keluarga muncul 10,5%–16,0% — merata dalam batas kewajaran acak.
+Kedelapan keluarga **dicentang berganda**: centang sebanyak yang diinginkan, dan soal
+hanya dibuat dari keluarga yang tercentang, dipakai bergantian. Satu keluarga selalu
+harus tersisa — daftar kosong tidak punya arti, dan generator toh akan jatuh kembali ke
+seluruh keluarga sehingga pengguna melihat bentuk yang tidak ia minta.
+
+`Families.bangkitkan()` menerima tiga bentuk masukan supaya pemanggil lama tetap jalan:
+satu nama keluarga (`'sarang'`), kata `'campur'`, atau daftar (`['sarang','panah']`).
+Id yang tidak dikenal dibuang, dan daftar yang jadi kosong berarti seluruh keluarga —
+generator tidak boleh berhenti bekerja hanya karena simpanan peramban memuat nama
+keluarga dari versi yang lebih lama.
+
+Diuji pada empat kombinasi × 200 bentuk: **0 keluarga menyelinap** ke luar daftar yang
+diminta, dan **0 keluarga yang diminta tidak pernah muncul**. Saat kedelapannya
+dicentang, sebarannya 9,5%–16,5% — merata dalam batas kewajaran acak.
 
 ## Jaminan kebenaran
 
@@ -436,7 +448,8 @@ sama dan hanya berbeda urutan huruf tetap dikenali kembar. Yang kembar dibuat ul
 ## Alur pemakaian
 
 1. **Pilih submateri.** Kesesuaian, Ketidaksamaan, Analogi, atau Serial.
-2. **Pilih keluarga bentuk** dan tingkat kesulitan.
+2. **Centang keluarga bentuk** (boleh lebih dari satu) dan pilih tingkat kesulitan.
+   Tombol *Pilih semua* mengembalikan kedelapannya sekaligus.
 3. **Acak bentuk.** Setiap bentuk lahir dari sebuah nomor benih; benih yang sama selalu
    menghasilkan bentuk yang sama, jadi soal bisa dibuat ulang persis dari nomornya.
    Panel kiri menampilkan daftar unsur penyusunnya dan ketujuh ukuran penyaringnya,
@@ -470,7 +483,7 @@ index.html          antarmuka (tata letak 3 kolom, satu layar)
 css/style.css       tampilan + aturan cetak
 js/rng.js           pengacak berbenih (mulberry32 + pengaduk splitmix32)
 js/figure.js        model unsur, transformasi, dan PEMBANDING ROTASI yang pasti
-js/families.js      delapan keluarga pembangkit bentuk + penyaring keterbacaan
+js/families.js      delapan keluarga pembangkit bentuk (bisa dipilih berganda) + penyaring
 js/render.js        penggambar SVG (unsur, kotak, deret kotak, bulatan bernomor)
 js/sheet.js         tata letak lembar soal — dipakai bersama layar, PDF, dan Word
 js/quiz.js          penyusun soal keempat submateri, pengecoh, audit, pembahasan
@@ -497,6 +510,10 @@ node uji/soal.js 12           # soal jadi, diperiksa ulang dari geometrinya
 ```bash
 node uji/periksa-pdf.js contoh-keluaran.pdf
 ```
+
+`uji/bentuk.js` memeriksa mesin bentuknya: sudut putar terbaca kembali, penyaring
+benar-benar menggigit, benih dapat diulang, struktur hubungan kebal putaran, dan
+pilihan keluarga berganda dihormati.
 
 `uji/soal.js` menjalankan sepuluh pemeriksaan atas 864 soal dari seluruh kombinasi
 submateri × tingkat × keluarga, semuanya **dihitung ulang dari bentuk tiap pilihan**,

@@ -13,7 +13,7 @@
 
   var state = {
     tipe: 'kesesuaian',
-    keluarga: 'campur',
+    keluarga: [],           // id keluarga yang tercentang; diisi saat init
     tingkat: 'sedang',
     benih: 1001,
     bentuk: null,
@@ -26,7 +26,7 @@
   function simpan() {
     try {
       localStorage.setItem(SIMPAN, JSON.stringify({
-        tipe: state.tipe, keluarga: state.keluarga, tingkat: state.tingkat,
+        tipe: state.tipe, keluarga: state.keluarga.slice(), tingkat: state.tingkat,
         benih: state.benih, tampilKunci: $('tampil-kunci').checked,
         jumlah: $('batch-jumlah').value,
         batchTipe: $('batch-tipe').value,
@@ -40,7 +40,10 @@
     try {
       var d = JSON.parse(localStorage.getItem(SIMPAN) || '{}');
       if (d.tipe) state.tipe = d.tipe;
-      if (d.keluarga) state.keluarga = d.keluarga;
+      // Simpanan versi lama menyimpan satu nama keluarga sebagai teks biasa;
+      // ubah menjadi daftar supaya pengaturan pengguna tidak hilang.
+      if (Array.isArray(d.keluarga)) state.keluarga = d.keluarga.slice();
+      else if (typeof d.keluarga === 'string' && d.keluarga !== 'campur') state.keluarga = [d.keluarga];
       if (d.tingkat) state.tingkat = d.tingkat;
       if (d.benih != null) state.benih = d.benih;
       if (d.tampilKunci) $('tampil-kunci').checked = true;
@@ -72,24 +75,70 @@
       tp.appendChild(b);
     });
 
+    /*
+     * Keluarga bentuk dipilih BERGANDA: tiap tombol adalah centang tersendiri,
+     * dan soal hanya dibuat dari keluarga yang tercentang. Satu keluarga harus
+     * selalu tersisa — daftar kosong tidak punya arti, dan `Families` toh akan
+     * jatuh kembali ke seluruh keluarga sehingga pengguna melihat bentuk yang
+     * tidak ia minta.
+     */
     var kp = $('keluarga-picker');
     kp.innerHTML = '';
-    var daftar = Families.KELUARGA.concat([{ id: 'campur', nama: 'Campur' }]);
-    daftar.forEach(function (k) {
+    Families.KELUARGA.forEach(function (k) {
+      var aktif = state.keluarga.indexOf(k.id) >= 0;
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'ghost' + (k.id === state.keluarga ? ' active' : '');
-      b.textContent = k.nama;
+      b.className = 'ghost' + (aktif ? ' active' : '');
+      b.textContent = (aktif ? '✓ ' : '') + k.nama;
       b.dataset.id = k.id;
+      b.title = aktif ? 'Klik untuk melepas centang' : 'Klik untuk mencentang';
       b.addEventListener('click', function () {
-        state.keluarga = k.id;
-        bangunPemilih();
-        segarkanBentuk();
-        buatSoal();
-        simpan();
+        var i = state.keluarga.indexOf(k.id);
+        if (i >= 0) {
+          if (state.keluarga.length === 1) {
+            hintKeluarga('Sisakan minimal satu keluarga bentuk.', true);
+            return;
+          }
+          state.keluarga.splice(i, 1);
+        } else {
+          state.keluarga.push(k.id);
+        }
+        gantiKeluarga();
       });
       kp.appendChild(b);
     });
+
+    var semua = document.createElement('button');
+    semua.type = 'button';
+    var lengkap = state.keluarga.length === Families.KELUARGA.length;
+    semua.className = 'ghost' + (lengkap ? ' active' : '');
+    semua.textContent = lengkap ? 'Semua tercentang' : 'Pilih semua';
+    semua.title = 'Centang kedelapan keluarga sekaligus';
+    semua.addEventListener('click', function () {
+      state.keluarga = Families.KELUARGA.map(function (k) { return k.id; });
+      gantiKeluarga();
+    });
+    kp.appendChild(semua);
+
+    hintKeluarga();
+  }
+
+  /** Dipanggil setiap centang keluarga berubah. */
+  function gantiKeluarga() {
+    bangunPemilih();
+    segarkanBentuk();
+    buatSoal();
+    simpan();
+  }
+
+  function hintKeluarga(pesan, buruk) {
+    var el = $('keluarga-hint');
+    if (!el) return;
+    var n = state.keluarga.length, total = Families.KELUARGA.length;
+    el.textContent = pesan || (n === total
+      ? 'Kedelapan keluarga dipakai bergantian.'
+      : n + ' dari ' + total + ' keluarga dipakai bergantian.');
+    el.style.color = buruk ? 'var(--bad)' : 'var(--muted)';
   }
 
   function tampilPerintah() {
@@ -487,6 +536,9 @@
 
   function init() {
     muat();
+    // Baku-kan lewat Families: id yang tak dikenal dibuang, daftar kosong
+    // menjadi seluruh keluarga. Simpanan lama karena itu selalu aman dipakai.
+    state.keluarga = Families.daftarKeluarga(state.keluarga.length ? state.keluarga : 'campur');
     $('tingkat').value = state.tingkat;
     $('benih').value = state.benih;
 

@@ -1,14 +1,22 @@
 /*
- * families.js — pembangkit bentuk figural, empat keluarga.
+ * families.js — pembangkit bentuk figural, delapan keluarga.
  *
  *   sarang  bingkai bersarang: beberapa persegi/persegi panjang terbuka yang
  *           saling bertumpuk pada sudut berbeda (seperti contoh soal di modul)
  *   datar   bangun datar beraturan + unsur penanda di dalam atau di tepinya
  *   kisi    titik-titik kisi yang dihubungkan garis, plus titik isi/kosong
  *   panah   batang berujung mata panah atau kait yang memancar dari pusat
+ *   zigzag  dua sampai tiga garis patah panjang yang saling menyilang
+ *   sisir   satu tulang punggung dengan gigi yang panjangnya berbeda-beda
+ *   blok    segi empat tertutup yang bertindihan sebagian
+ *   silang  lingkaran besar dengan tali busur dan titik di dalamnya
  *
  * Bentuknya DIBANGKITKAN, bukan digambar satu per satu, dari sebuah nomor benih.
  * Benih yang sama selalu menghasilkan bentuk yang sama.
+ *
+ * KELUARGA BISA DIPILIH BERGANDA. `bangkitkan()` menerima satu nama keluarga,
+ * kata 'campur', atau DAFTAR nama — lihat `daftarKeluarga()`. Pengguna
+ * mencentang keluarga yang diinginkan dan soal hanya lahir dari daftar itu.
  *
  * SEMUA HASIL ACAK MELEWATI SATU PENYARING YANG SAMA sebelum dipakai. Dua
  * syarat pertamanya bukan soal keindahan melainkan syarat agar soalnya SAH:
@@ -18,7 +26,9 @@
  *      pengecoh yang sudutnya berselisih 90 derajat akan tampak kembar.
  *   2. bentuknya harus kiral. Kalau bayangan cerminnya bisa ditumpangkan lewat
  *      putaran saja, pengecoh hasil pencerminan sebenarnya BENAR — soalnya
- *      berkunci ganda. Sekitar 1 dari 6 bentuk mentah gagal di syarat ini.
+ *      berkunci ganda. Syarat ini sendiri hanya menolak 0,3% bentuk mentah;
+ *      yang menolak 10,2% adalah syarat berikutnya, bahwa cerminnya harus
+ *      BERBEDA CUKUP JAUH — kiral secara matematis belum berarti terlihat beda.
  *
  * Sisanya menjaga keterbacaan: tidak ada ruas sehalus rambut, tidak ada dua
  * unsur yang saling menempel sehingga terbaca satu garis tebal, tidak ada
@@ -483,6 +493,28 @@
   }
 
   /**
+   * Baku-kan pilihan keluarga menjadi DAFTAR id yang boleh dipakai.
+   *
+   * Menerima tiga bentuk masukan supaya pemanggil lama tetap jalan:
+   *   'sarang'                 satu keluarga saja
+   *   'campur' / tak dikenal   seluruh keluarga
+   *   ['sarang','panah']       hanya yang dicentang pengguna
+   *
+   * Id yang tidak dikenal dibuang; kalau daftarnya jadi kosong, seluruh
+   * keluarga dipakai. Generator tidak boleh berhenti bekerja hanya karena
+   * simpanan peramban memuat nama keluarga dari versi yang lebih lama.
+   */
+  function daftarKeluarga(keluarga) {
+    var semua = KELUARGA.map(function (k) { return k.id; });
+    if (Array.isArray(keluarga)) {
+      var sah = keluarga.filter(function (id) { return !!PEMBANGKIT[id]; });
+      return sah.length ? sah : semua;
+    }
+    if (PEMBANGKIT[keluarga]) return [keluarga];
+    return semua;
+  }
+
+  /**
    * Bangkitkan satu bentuk yang PASTI lolos penyaring.
    *
    * Keluarganya diundi SEKALI di luar gelung percobaan, lalu percobaan ulang
@@ -497,10 +529,10 @@
    * @returns {object} bentuk, dengan properti tambahan `keluarga`, `benih`, `coba`
    */
   function bangkitkan(keluarga, benih) {
-    var id = keluarga;
-    if (keluarga === 'campur' || !PEMBANGKIT[keluarga]) {
-      id = Rng.alat((benih >>> 0) ^ 0x5bf03635).pilih(KELUARGA).id;
-    }
+    var boleh = daftarKeluarga(keluarga);
+    var id = boleh.length === 1
+      ? boleh[0]
+      : Rng.alat((benih >>> 0) ^ 0x5bf03635).pilih(boleh);
     for (var c = 0; c < COBA_MAKS; c++) {
       var a = Rng.alat((benih >>> 0) + c * 0x9e3779b1);
       var fig = normalkan(F.buat(PEMBANGKIT[id](a), id, benih));
@@ -521,13 +553,15 @@
    */
   function mentah(keluarga, benih) {
     var a = Rng.alat(benih);
-    var id = PEMBANGKIT[keluarga] ? keluarga : a.pilih(KELUARGA).id;
+    var boleh = daftarKeluarga(keluarga);
+    var id = boleh.length === 1 ? boleh[0] : a.pilih(boleh);
     return normalkan(F.buat(PEMBANGKIT[id](a), id, benih));
   }
 
   return {
     R: R, KELUARGA: KELUARGA, AMBANG: AMBANG, COBA_MAKS: COBA_MAKS,
     bangkitkan: bangkitkan, periksa: periksa, normalkan: normalkan,
+    daftarKeluarga: daftarKeluarga,
     mentah: mentah, cadangan: cadangan, poligonBeraturan: poligonBeraturan,
     garis: garis, bulat: bulat, bingkai: bingkai
   };
