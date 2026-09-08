@@ -317,5 +317,44 @@ cek('tingkat mudah memang lebih longgar', mudahLonggar > mudahCek * 0.5,
 console.log('   ' + mudahLonggar + ' dari ' + mudahCek +
   ' soal mudah punya minimal satu pengecoh yang bisa dicoret sekilas');
 
+// ------------------------ 11. benih yang dicatat benar-benar membuat ulang soal
+console.log('\n11. Benih yang dicatat membuat ulang soal yang sama persis');
+/*
+ * Nomor benih tercetak di bank soal dan dipakai menelusuri soal bermasalah.
+ * Kalau benih itu tidak sungguh-sungguh mengembalikan soal yang sama, seluruh
+ * penelusuran jadi sia-sia — dan QC paket akan membandingkan soal yang keliru.
+ * Barisan benihnya dibuat menyerupai batch aplikasi: berbeda satu tetapan.
+ */
+var kelSemua = Fam.KELUARGA.map(function (k) { return k.id; });
+var ulangBeda = 0, ulangCek = 0, benihJalan = 1001 >>> 0;
+var kelHitung = {};
+for (i = 0; i < N * 12; i++) {
+  benihJalan = (benihJalan + 0x9e3779b1) >>> 0;
+  var su = Q.buat({ tipe: 'kesesuaian', tingkat: 'sulit', keluarga: kelSemua, benih: benihJalan });
+  if (!su) continue;
+  ulangCek++;
+  kelHitung[su.keluarga] = (kelHitung[su.keluarga] || 0) + 1;
+  var lagi = Q.buat({ tipe: 'kesesuaian', tingkat: 'sulit', keluarga: kelSemua, benih: su.benih });
+  if (!lagi || Q.sidik(lagi) !== Q.sidik(su) || lagi.jawabanHuruf !== su.jawabanHuruf) {
+    ulangBeda++;
+    if (ulangBeda < 4) console.log('  benih ' + su.benih + ' tidak terulang sama');
+  }
+}
+cek('benih dapat diulang', ulangBeda === 0, ulangBeda + ' dari ' + ulangCek + ' tidak terulang');
+console.log('   ' + (ulangCek - ulangBeda) + '/' + ulangCek + ' soal terulang persis dari benih tercatatnya');
+
+// Sebaran keluarga pada barisan benih itu harus merata: keluarga yang lebih
+// sering gagal menyusun pengecoh tidak boleh tergantikan keluarga lain.
+var harapKel = ulangCek / kelSemua.length, x2Kel = 0;
+kelSemua.forEach(function (k) {
+  x2Kel += Math.pow((kelHitung[k] || 0) - harapKel, 2) / harapKel;
+});
+console.log('   sebaran keluarga: ' + kelSemua.map(function (k) {
+  return k + ':' + (kelHitung[k] || 0);
+}).join('  '));
+cek('sebaran keluarga merata', x2Kel < 14.07,
+  'chi-kuadrat ' + x2Kel.toFixed(2) + ' melewati ambang 14,07 (7 db)');
+console.log('   chi-kuadrat ' + x2Kel.toFixed(2) + ' (7 derajat bebas, ambang 14,07)');
+
 console.log('\n' + (gagal ? gagal + ' PEMERIKSAAN GAGAL' : 'Semua pemeriksaan lulus.'));
 process.exit(gagal ? 1 : 0);

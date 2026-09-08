@@ -119,6 +119,10 @@ select, input[type="text"], input[type="number"] {
 
 /* ---------- pemilih tipe & keluarga ---------- */
 #tipe-picker button, #keluarga-picker button { padding: 4px 7px; font-size: 12px; }
+
+/* Saklar mode pilih tunggal/ganda, duduk di ujung kanan judulnya. */
+h2 .mode-btn { margin-left: auto; padding: 1px 8px; font-size: 11px; font-weight: 600; }
+h2 .mode-btn + .tip { margin-left: 4px; }
 .num-field { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
 .num-field input { width: 100px; }
 

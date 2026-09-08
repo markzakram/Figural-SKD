@@ -515,7 +515,7 @@ node uji/periksa-pdf.js contoh-keluaran.pdf
 benar-benar menggigit, benih dapat diulang, struktur hubungan kebal putaran, dan
 pilihan keluarga berganda dihormati.
 
-`uji/soal.js` menjalankan sepuluh pemeriksaan atas 864 soal dari seluruh kombinasi
+`uji/soal.js` menjalankan sebelas pemeriksaan atas 864 soal dari seluruh kombinasi
 submateri × tingkat × keluarga, semuanya **dihitung ulang dari bentuk tiap pilihan**,
 bukan dari catatan penyusunnya:
 
@@ -532,7 +532,56 @@ bukan dari catatan penyusunnya:
 9. tidak ada dua opsi yang kalimat alasannya sama;
 10. pada tingkat **sulit**, kelima opsi kesesuaian dan ketidaksamaan berprofil sama —
     dan sebaliknya, tingkat mudah memang menyediakan pengecoh yang bisa dicoret
-    sekilas, supaya ketiga tingkat itu benar-benar berbeda.
+    sekilas, supaya ketiga tingkat itu benar-benar berbeda;
+11. nomor benih yang dicatat benar-benar membuat ulang soal yang sama persis, dan
+    sebaran keluarganya merata pada barisan benih yang dipakai batch.
+
+### QC satu paket yang sudah diunduh
+
+```bash
+node uji/qc-paket.js uji/keluaran/benih-100.json uji/keluaran/soal-figural-100soal.pdf
+```
+
+Berbeda dari `uji/soal.js` yang membuat soal khusus untuk diuji, alat ini menguji paket
+yang **benar-benar akan dipakai**: tiap soal dibuat ulang dari nomor benihnya, diaudit
+dari geometrinya, lalu kunci yang **tercetak di PDF** dicocokkan dengan hasil audit itu —
+pemeriksaan ujung ke ujung, dari benih sampai ke tinta di kertas.
+
+Hasil pada satu paket 100 soal kesesuaian tingkat sulit:
+
+| Yang diperiksa | Hasil |
+|---|---|
+| soal terulang persis dari benihnya | 100/100 |
+| kunci tunggal, tercatat benar, tanpa opsi kembar | 100/100 |
+| kelima opsi berprofil & berstruktur sama | 500/500 opsi |
+| pengecoh pencerminan yang keliru dinilai sah | 0 dari 100 |
+| soal kembar | 0 |
+| sebaran kunci A–E | χ² 7,20 (4 db, ambang 9,49) |
+| kunci yang tercetak di PDF cocok dengan geometrinya | 100/100 |
+| sudut putar di pembahasan cocok dengan yang terukur | 100/100 |
+| halaman PDF berukuran 1440 × 810 | 400/400 |
+
+Waktunya: 2,7 detik untuk menyusun 100 soal, 13 detik untuk merakit PDF-nya (16,9 MB,
+173 KB per soal).
+
+### Dua cacat yang ditemukan QC ini
+
+Keduanya tidak terlihat oleh `uji/soal.js`, karena hanya muncul pada alur batch yang
+sesungguhnya:
+
+**Sebaran keluarga melenceng.** Pada paket pertama, `silang` hanya muncul 3 kali dari
+100 — seharusnya sekitar 12. Sebabnya `Quiz.buat()` mengundi ulang keluarga pada setiap
+percobaan, sehingga keluarga yang lebih sering gagal menyusun pengecoh tergantikan
+keluarga lain; `silang` berhasil pada percobaan pertama hanya 58% berbanding 99% milik
+`zigzag`. Ini bias yang sama persis dengan yang sudah diperbaiki di `families.js`, muncul
+lagi satu tingkat di atasnya. Keluarga kini diundi **sekali di luar gelung percobaan**.
+
+**Benih yang dicatat tidak membuat ulang soalnya.** Setelah perbaikan di atas, nomor
+benih yang tercetak di bank soal ternyata benih PERCOBAAN, bukan benih awal — dan sejak
+keluarga diundi dari benih awal, benih percobaan tidak lagi cukup untuk memanggil soal
+yang sama: 19 dari 100 soal terulang berbeda. Yang dicatat kini **benih awal**, satu
+angka yang menentukan seluruh rangkaiannya. Diperiksa `uji/soal.js` nomor 11: 96/96
+soal terulang persis, dan sebaran keluarganya χ² 8,67 (ambang 14,07).
 
 Alat bantu lain:
 

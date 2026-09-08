@@ -14,6 +14,7 @@
   var state = {
     tipe: 'kesesuaian',
     keluarga: [],           // id keluarga yang tercentang; diisi saat init
+    modeGanda: false,       // false = pilih satu keluarga, true = centang beberapa
     tingkat: 'sedang',
     benih: 1001,
     bentuk: null,
@@ -26,7 +27,8 @@
   function simpan() {
     try {
       localStorage.setItem(SIMPAN, JSON.stringify({
-        tipe: state.tipe, keluarga: state.keluarga.slice(), tingkat: state.tingkat,
+        tipe: state.tipe, keluarga: state.keluarga.slice(), modeGanda: state.modeGanda,
+        tingkat: state.tingkat,
         benih: state.benih, tampilKunci: $('tampil-kunci').checked,
         jumlah: $('batch-jumlah').value,
         batchTipe: $('batch-tipe').value,
@@ -44,6 +46,7 @@
       // ubah menjadi daftar supaya pengaturan pengguna tidak hilang.
       if (Array.isArray(d.keluarga)) state.keluarga = d.keluarga.slice();
       else if (typeof d.keluarga === 'string' && d.keluarga !== 'campur') state.keluarga = [d.keluarga];
+      if (typeof d.modeGanda === 'boolean') state.modeGanda = d.modeGanda;
       if (d.tingkat) state.tingkat = d.tingkat;
       if (d.benih != null) state.benih = d.benih;
       if (d.tampilKunci) $('tampil-kunci').checked = true;
@@ -76,23 +79,49 @@
     });
 
     /*
-     * Keluarga bentuk dipilih BERGANDA: tiap tombol adalah centang tersendiri,
-     * dan soal hanya dibuat dari keluarga yang tercentang. Satu keluarga harus
-     * selalu tersisa — daftar kosong tidak punya arti, dan `Families` toh akan
-     * jatuh kembali ke seluruh keluarga sehingga pengguna melihat bentuk yang
-     * tidak ia minta.
+     * Pemilih keluarga punya DUA MODE, diatur saklar di sebelah judulnya.
+     *
+     *   tunggal (baku)  satu keluarga saja, atau "Campur" untuk kedelapannya —
+     *                   perilaku radio, sekali klik langsung berganti
+     *   ganda           tiap tombol jadi centang tersendiri, boleh beberapa
+     *
+     * Keduanya menyimpan hasil yang sama, yaitu daftar id di `state.keluarga`;
+     * yang berbeda hanya cara mengisinya. Dengan begitu sisa program tidak
+     * perlu tahu mode mana yang sedang dipakai.
      */
     var kp = $('keluarga-picker');
     kp.innerHTML = '';
+    var semuaId = Families.KELUARGA.map(function (k) { return k.id; });
+    var lengkap = state.keluarga.length === semuaId.length;
+
+    var tombolMode = $('btn-mode-ganda');
+    if (tombolMode) {
+      tombolMode.classList.toggle('active', state.modeGanda);
+      tombolMode.textContent = state.modeGanda ? '✓ Pilih ganda' : 'Pilih ganda';
+      tombolMode.title = state.modeGanda
+        ? 'Sedang mode centang ganda — klik untuk kembali ke pilihan tunggal'
+        : 'Klik untuk mencentang beberapa keluarga sekaligus';
+    }
+
     Families.KELUARGA.forEach(function (k) {
       var aktif = state.keluarga.indexOf(k.id) >= 0;
+      // Pada mode tunggal, "Campur" yang menyala saat semuanya terpakai —
+      // bukan kedelapan tombolnya sekaligus, yang akan terbaca seperti mode ganda.
+      var nyala = state.modeGanda ? aktif : (aktif && !lengkap);
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'ghost' + (aktif ? ' active' : '');
-      b.textContent = (aktif ? '✓ ' : '') + k.nama;
+      b.className = 'ghost' + (nyala ? ' active' : '');
+      b.textContent = (state.modeGanda && aktif ? '✓ ' : '') + k.nama;
       b.dataset.id = k.id;
-      b.title = aktif ? 'Klik untuk melepas centang' : 'Klik untuk mencentang';
+      b.title = state.modeGanda
+        ? (aktif ? 'Klik untuk melepas centang' : 'Klik untuk mencentang')
+        : 'Pakai keluarga ini saja';
       b.addEventListener('click', function () {
+        if (!state.modeGanda) {
+          state.keluarga = [k.id];
+          gantiKeluarga();
+          return;
+        }
         var i = state.keluarga.indexOf(k.id);
         if (i >= 0) {
           if (state.keluarga.length === 1) {
@@ -108,17 +137,18 @@
       kp.appendChild(b);
     });
 
-    var semua = document.createElement('button');
-    semua.type = 'button';
-    var lengkap = state.keluarga.length === Families.KELUARGA.length;
-    semua.className = 'ghost' + (lengkap ? ' active' : '');
-    semua.textContent = lengkap ? 'Semua tercentang' : 'Pilih semua';
-    semua.title = 'Centang kedelapan keluarga sekaligus';
-    semua.addEventListener('click', function () {
-      state.keluarga = Families.KELUARGA.map(function (k) { return k.id; });
+    var borongan = document.createElement('button');
+    borongan.type = 'button';
+    borongan.className = 'ghost' + (lengkap ? ' active' : '');
+    borongan.textContent = state.modeGanda
+      ? (lengkap ? 'Semua tercentang' : 'Pilih semua')
+      : 'Campur';
+    borongan.title = 'Pakai kedelapan keluarga bergantian';
+    borongan.addEventListener('click', function () {
+      state.keluarga = semuaId.slice();
       gantiKeluarga();
     });
-    kp.appendChild(semua);
+    kp.appendChild(borongan);
 
     hintKeluarga();
   }
@@ -135,9 +165,15 @@
     var el = $('keluarga-hint');
     if (!el) return;
     var n = state.keluarga.length, total = Families.KELUARGA.length;
-    el.textContent = pesan || (n === total
-      ? 'Kedelapan keluarga dipakai bergantian.'
-      : n + ' dari ' + total + ' keluarga dipakai bergantian.');
+    var isi;
+    if (pesan) isi = pesan;
+    else if (n === total) isi = 'Kedelapan keluarga dipakai bergantian.';
+    else if (n === 1) {
+      isi = 'Hanya "' + Families.KELUARGA.filter(function (k) {
+        return k.id === state.keluarga[0];
+      }).map(function (k) { return k.nama; })[0] + '" yang dipakai.';
+    } else isi = n + ' dari ' + total + ' keluarga dipakai bergantian.';
+    el.textContent = isi;
     el.style.color = buruk ? 'var(--bad)' : 'var(--muted)';
   }
 
@@ -568,6 +604,16 @@
       segarkanBentuk();
       buatSoal();
       simpan();
+    });
+    $('btn-mode-ganda').addEventListener('click', function () {
+      state.modeGanda = !state.modeGanda;
+      // Kembali ke mode tunggal sementara beberapa keluarga tercentang:
+      // sisakan yang pertama, kecuali memang kedelapannya (itu "Campur").
+      if (!state.modeGanda && state.keluarga.length > 1 &&
+          state.keluarga.length < Families.KELUARGA.length) {
+        state.keluarga = [state.keluarga[0]];
+      }
+      gantiKeluarga();
     });
     $('btn-buat').addEventListener('click', function () { buatSoal(); });
     $('btn-soal-baru').addEventListener('click', function () {

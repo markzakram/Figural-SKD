@@ -905,10 +905,26 @@
     var keluarga = opsi.keluarga || 'campur';
     var benih = (opsi.benih >>> 0) || 1;
 
+    /*
+     * Keluarga diundi SEKALI, di luar gelung percobaan.
+     *
+     * Kalau diundi ulang tiap percobaan, keluarga yang lebih sering gagal
+     * menyusun pengecoh akan tergantikan keluarga lain, dan sebaran yang
+     * diminta pengguna melenceng. Terukur pada paket 100 soal kesesuaian
+     * tingkat sulit: `silang` hanya muncul 3 kali dari 100 — padahal
+     * seharusnya sekitar 12 — sebab ia berhasil pada percobaan pertama hanya
+     * 58% berbanding 99% milik `zigzag`. Ini persis bias yang sama dengan yang
+     * sudah diperbaiki di `families.js`, muncul lagi satu tingkat di atasnya.
+     */
+    var boleh = Fam.daftarKeluarga(keluarga);
+    var keluargaTetap = boleh.length === 1
+      ? boleh[0]
+      : Rng.alat((benih >>> 0) ^ 0x63a7f19b).pilih(boleh);
+
     for (var c = 0; c < 10; c++) {
       var benihKini = (benih + c * 0x27d4eb2f) >>> 0;
       var a = Rng.alat(benihKini ^ 0x1b873593);
-      var dasar = Fam.bangkitkan(keluarga, benihKini);
+      var dasar = Fam.bangkitkan(keluargaTetap, benihKini);
       var inti = null;
       if (tipe === 'kesesuaian') inti = buatKesesuaian(dasar, a, tingkat);
       else if (tipe === 'ketidaksamaan') inti = buatKetidaksamaan(dasar, a, tingkat);
@@ -921,8 +937,21 @@
       var idx = -1;
       pilihan.forEach(function (p, i) { if (p.benar) idx = i; });
 
+      /*
+       * `benih` yang dicatat adalah benih AWAL, bukan benih percobaan.
+       *
+       * Percobaan ke-c memakai benih turunan, dan sejak keluarga diundi sekali
+       * di luar gelung, benih turunan itu TIDAK LAGI cukup untuk membuat ulang
+       * soalnya — mengundi keluarga darinya bisa menghasilkan keluarga lain,
+       * dan soalnya jadi berbeda sama sekali. Terukur 19 dari 100 soal gagal
+       * terulang. Benih awal menentukan seluruh rangkaiannya (undian keluarga
+       * maupun urutan percobaan), jadi itulah yang dicatat: satu angka yang
+       * benar-benar bisa dipakai memanggil soal yang sama persis kembali.
+       * `benihBentuk` disimpan terpisah untuk penelusuran.
+       */
       var soal = {
-        tipe: tipe, tingkat: tingkat, keluarga: dasar.keluarga, benih: benihKini,
+        tipe: tipe, tingkat: tingkat, keluarga: dasar.keluarga,
+        benih: benih, benihBentuk: benihKini,
         perintah: PERINTAH[tipe],
         dasar: inti.dasar, soalGambar: inti.soalGambar,
         pilihan: pilihan, jawabanIndex: idx, jawabanHuruf: huruf(idx),
