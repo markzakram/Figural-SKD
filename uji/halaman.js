@@ -53,9 +53,17 @@ Q.TIPE.forEach(function (tp, i) {
     '<div class="tingkat">Tingkat Kesulitan: Sedang</div></div>',
     'halaman 1 — judul'));
 
-  // 2. gambar soal & 3. pilihan
-  [['gambarSoal', 70, 'halaman 2 — gambar soal'],
-    ['gambarPilihan', 90, 'halaman 3 — pilihan A-E']].forEach(function (par) {
+  /*
+   * Kesesuaian mencetak acuan dan kelima opsinya pada SATU halaman, jadi
+   * soalnya hanya tiga halaman. Submateri lain tetap memisahkan halaman soal
+   * dan halaman pilihan.
+   */
+  var lembarGambar = s.tipe === 'kesesuaian'
+    ? [['gambarGabung', 70, 'halaman 2 — soal + pilihan A-E']]
+    : [['gambarSoal', 70, 'halaman 2 — gambar soal'],
+      ['gambarPilihan', 90, 'halaman 3 — pilihan A-E']];
+
+  lembarGambar.forEach(function (par) {
     var svg = Sheet[par[0]](s, { sisi: 150 });
     var u = ukuranSvg(svg);
     var p = pas(u.w, u.h, par[1]);
@@ -76,7 +84,7 @@ Q.TIPE.forEach(function (tp, i) {
     s.pembahasan.map(function (t) {
       return '<p>' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>';
     }).join('') + '</div>',
-    'halaman 4 — kunci & pembahasan'));
+    (s.tipe === 'kesesuaian' ? 'halaman 3' : 'halaman 4') + ' — kunci & pembahasan'));
 });
 
 var html = '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">' +

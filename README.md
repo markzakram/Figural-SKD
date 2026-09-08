@@ -401,12 +401,36 @@ lebih besar daripada opsinya, padahal keduanya harus dibandingkan langsung.
 ## Format PDF
 
 Mengikuti format PDF generator *diagrammatical*: halaman **1440 × 810 pt**
-(20 × 11,25 inci, 16:9) dan **empat halaman per soal**:
+(20 × 11,25 inci, 16:9).
 
 1. **Judul** — nomor soal, submateri, dan tingkat kesulitan (berwarna).
 2. **Gambar soal** — gambar acuan, pasangan analogi, atau deret serial.
 3. **Pilihan A–E**.
 4. **Kunci & pembahasan** — gambar di kiri, uraian di kanan.
+
+### Kesesuaian: soal dan pilihannya pada satu halaman
+
+Gambar acuan kesesuaian hanya satu kotak, jadi ia muat berdampingan dengan kelima
+opsinya — dan itu lebih baik daripada dua halaman terpisah: penjawab bisa
+membandingkan acuan dengan opsinya tanpa membalik halaman. Susunannya mengikuti bentuk
+lembar soal yang lazim:
+
+- gambar acuan berdiri sendiri dalam kotaknya di kiri;
+- kelima opsi berjajar di dalam **satu** bingkai di kanan;
+- huruf **A** sampai **E** tercetak tebal di bawah masing-masing.
+
+Opsi sengaja tidak diberi bingkai sendiri-sendiri. Bingkai per opsi membuat mata
+membanding-bandingkan kotaknya dan bukan gambarnya, padahal yang harus dibaca justru
+pola di dalamnya.
+
+Akibatnya soal kesesuaian memakai **tiga halaman**, bukan empat — paket 100 soal turun
+dari 400 menjadi 300 halaman. Ketiga submateri lain tetap empat halaman, sebab gambar
+soalnya sendiri sudah selebar empat sampai lima kotak. `pdf.js` dan `docx.js` memilih
+susunannya dari ada-tidaknya `gambarGabung` pada soal, jadi keduanya tidak perlu tahu
+submateri apa yang sedang dicetak.
+
+Lembar di layar tetap bersusun ke bawah (acuan di atas, opsi di bawah) karena panel
+tengahnya sempit; begitu pula cetakan A4, yang porsinya lebih pas bersusun.
 
 Ukuran huruf pembahasan **dicoba dari 20 pt turun ke 13 pt** dan yang dipakai adalah
 yang terbesar yang masih muat; kalau satu kolom tetap kurang, teksnya dipecah menjadi
@@ -471,7 +495,7 @@ Pilihan terakhir tersimpan otomatis di peramban.
 | satu soal (tipe lain) | 4–7 ms |
 | paket 100 soal campuran | 0,97 detik |
 | penyusunan SVG 100 soal | 0,92 detik (11,5 KB SVG per soal) |
-| PDF | ≈ 162 KB per soal |
+| PDF | ≈ 218 KB per soal (kesesuaian, 3 halaman) |
 
 Soal kesesuaian paling mahal karena ia sendiri yang mencari empat pengecoh lewat
 pengukuran beda bentuk; tipe lain sebagian pengecohnya sudah tertentu dari polanya.
@@ -559,10 +583,11 @@ Hasil pada satu paket 100 soal kesesuaian tingkat sulit:
 | sebaran kunci A–E | χ² 7,20 (4 db, ambang 9,49) |
 | kunci yang tercetak di PDF cocok dengan geometrinya | 100/100 |
 | sudut putar di pembahasan cocok dengan yang terukur | 100/100 |
-| halaman PDF berukuran 1440 × 810 | 400/400 |
+| halaman PDF berukuran 1440 × 810 | 300/300 |
 
-Waktunya: 2,7 detik untuk menyusun 100 soal, 13 detik untuk merakit PDF-nya (16,9 MB,
-173 KB per soal).
+Waktunya: 2,7 detik untuk menyusun 100 soal, sekitar 13 detik untuk merakit PDF-nya
+(16,0 MB, 300 halaman). Berkas Word-nya 24,2 MB dengan 200 gambar tersemat, dibaca
+pembaca ZIP .NET tanpa galat.
 
 ### Dua cacat yang ditemukan QC ini
 

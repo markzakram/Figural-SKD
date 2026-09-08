@@ -1,9 +1,15 @@
 /*
  * pdf.js — penyusun PDF tanpa pustaka luar.
  *
- * Halaman 1440 x 810 pt (20 x 11,25 inci, 16:9) dan satu soal tetap empat halaman:
- * judul, gambar soal, pilihan A-E, lalu kunci + pembahasan. Susunannya mengikuti
- * format PDF generator diagrammatical.
+ * Halaman 1440 x 810 pt (20 x 11,25 inci, 16:9), mengikuti format PDF generator
+ * diagrammatical. Satu soal biasanya empat halaman: judul, gambar soal, pilihan
+ * A-E, lalu kunci + pembahasan.
+ *
+ * Kalau soal menyertakan `gambarGabung`, halaman soal dan halaman pilihan
+ * dilebur menjadi SATU halaman dan soal itu hanya memakai tiga halaman. Bentuk
+ * itu dipakai submateri kesesuaian, yang gambar acuannya cuma satu kotak
+ * sehingga muat berdampingan dengan kelima opsinya — dan penjawab lalu bisa
+ * membandingkan keduanya tanpa membalik halaman.
  *
  * Gambar disisipkan sebagai XObject: DeviceGray bila gambarnya hitam-putih
  * (datanya sepertiga), DeviceRGB bila berwarna. Kompresi memakai CompressionStream
@@ -225,8 +231,12 @@
     var rantai = Promise.resolve();
     soal.forEach(function (s) {
       rantai = rantai.then(function () {
-        return Promise.all([pasangGambar(s.gambarSoal), pasangGambar(s.gambarPilihan),
-          s.gambarPembahasan ? pasangGambar(s.gambarPembahasan) : null]);
+        return Promise.all([
+          s.gambarGabung ? pasangGambar(s.gambarGabung) : null,
+          s.gambarSoal ? pasangGambar(s.gambarSoal) : null,
+          s.gambarPilihan ? pasangGambar(s.gambarPilihan) : null,
+          s.gambarPembahasan ? pasangGambar(s.gambarPembahasan) : null
+        ]);
       }).then(function (no) {
         /* --- halaman judul --- */
         var nomor = 'No. ' + s.no;
@@ -243,15 +253,19 @@
         }
         buatHalaman(isi.join('\n'));
 
-        /* --- halaman gambar soal & halaman pilihan --- */
-        halamanGambar(s.gambarSoal, no[0], 70);
-        halamanGambar(s.gambarPilihan, no[1], 90);
+        /* --- halaman gambar soal (+ pilihan) --- */
+        if (no[0]) {
+          halamanGambar(s.gambarGabung, no[0], 70);
+        } else {
+          halamanGambar(s.gambarSoal, no[1], 70);
+          halamanGambar(s.gambarPilihan, no[2], 90);
+        }
 
         /* --- halaman jawaban --- */
         // Gambar acuan dan kuncinya ditaruh bersanding di kiri supaya pembaca
         // bisa menelusuri kalimat "diputar 225 derajat searah jarum jam"
         // langsung pada kedua gambar yang dimaksud.
-        var adaGambar = !!(s.gambarPembahasan && no[2]);
+        var adaGambar = !!(s.gambarPembahasan && no[3]);
         var xTeks = adaGambar ? 640 : 100;
         var lebarIsi = LEBAR - xTeks - 100;
         var isiJwb = [];
@@ -269,7 +283,7 @@
         var yAtas = TINGGI - 110;
         var tata = susunPembahasan(s, xTeks, lebarIsi, yAtas, yAtas - 60, ukur);
         isiJwb.push(tata.isi);
-        buatHalaman(isiJwb.join('\n'), adaGambar ? no[2] : null);
+        buatHalaman(isiJwb.join('\n'), adaGambar ? no[3] : null);
       });
     });
 

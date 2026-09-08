@@ -5,10 +5,12 @@
  * Word. Kalau tiap keluaran menyusun tata letaknya sendiri, gambar di layar
  * dan gambar di kertas akan pelan-pelan berbeda.
  *
- * Empat gambar per soal, sejajar dengan empat halaman PDF-nya:
+ * Gambar per soal, sejajar dengan halaman PDF-nya:
  *
  *   gambarSoal       gambar acuan / pasangan analogi / deret serial
  *   gambarPilihan    lima kotak A-E
+ *   gambarGabung     acuan + kelima opsi berhuruf dalam SATU gambar; dipakai
+ *                    kesesuaian, yang karenanya hanya butuh tiga halaman
  *   gambarPembahasan gambar acuan bersanding dengan kunci, plus penunjuk
  *   lembar           soal dan pilihan dalam satu gambar (untuk layar & cetak)
  *
@@ -167,6 +169,62 @@
       b = blokPilihan(soal, sisi, skala, { tanpaLabel: true });
     }
     return bungkusPenuh(b.svg, b.width, b.height, blokPilihan(soal, sisi, skala, {}).width);
+  }
+
+  /**
+   * Soal DAN pilihannya dalam satu gambar — bentuk yang lazim dipakai lembar
+   * soal kesesuaian: gambar acuan berdiri sendiri di kiri, kelima opsi berjajar
+   * di dalam satu bingkai di kanan, huruf A sampai E tercetak di bawahnya.
+   *
+   * Opsi tidak diberi bingkai sendiri-sendiri, hanya satu bingkai untuk
+   * kelimanya. Bingkai per opsi membuat mata membanding-bandingkan KOTAKNYA
+   * dan bukan gambarnya, padahal yang harus dibaca justru pola di dalamnya.
+   *
+   * Karena kesesuaian hanya butuh satu kotak acuan, keduanya muat berdampingan
+   * pada satu halaman — dan itu lebih baik daripada dua halaman terpisah:
+   * penjawab bisa membandingkan acuan dengan opsinya tanpa membalik halaman.
+   */
+  function blokGabung(soal, sisi, skala, opsi) {
+    opsi = opsi || {};
+    var celah = Math.round(sisi * 0.22);       // jarak kotak acuan ke bingkai opsi
+    var sela = Math.round(sisi * 0.06);        // jarak antar opsi di dalam bingkai
+    var uk = Math.max(12, Math.round(sisi * 0.19));
+    var n = soal.pilihan.length;
+
+    var acuan = R.kotak(soal.dasar, sisi, { skala: skala });
+    var xOpsi = sisi + celah;
+    var lebarOpsi = n * sisi + (n - 1) * sela;
+
+    var bagian = [];
+    bagian.push(acuan.svg);
+
+    // satu bingkai untuk kelima opsi
+    bagian.push('<rect x="' + R.num(xOpsi + 0.5) + '" y="0.5" width="' + R.num(lebarOpsi - 1) +
+      '" height="' + R.num(sisi - 1) + '" rx="' + R.num(sisi * 0.03) +
+      '" fill="#ffffff" stroke="#c9d0de" stroke-width="1"/>');
+
+    soal.pilihan.forEach(function (p, i) {
+      var x = xOpsi + i * (sisi + sela);
+      if (opsi.tampilKunci && i === soal.jawabanIndex) {
+        bagian.push('<rect x="' + R.num(x + 2) + '" y="2" width="' + R.num(sisi - 4) +
+          '" height="' + R.num(sisi - 4) + '" rx="' + R.num(sisi * 0.03) +
+          '" fill="#e6f6f0" stroke="#12805c" stroke-width="2"/>');
+      }
+      var k = R.kotak(p.fig, sisi, { skala: skala, bingkai: false });
+      bagian.push('<g transform="translate(' + R.num(x) + ',0)">' + k.svg + '</g>');
+      bagian.push(R.text(Q.huruf(i) + '.', x + sisi / 2, sisi + uk + 4,
+        { size: uk, weight: 700, anchor: 'middle' }));
+    });
+
+    return { svg: bagian.join(''), width: xOpsi + lebarOpsi, height: sisi + uk + 8 };
+  }
+
+  /** Halaman gabungan soal + pilihan (kesesuaian). */
+  function gambarGabung(soal, opsi) {
+    opsi = opsi || {};
+    var sisi = opsi.sisi || 150;
+    var b = blokGabung(soal, sisi, skalaSoal(soal, sisi), opsi);
+    return bungkus(b.svg, b.width, b.height);
   }
 
   /** Halaman "pilihan A-E" pada PDF. */
@@ -457,9 +515,9 @@
 
   return {
     PAD: PAD,
-    gambarSoal: gambarSoal, gambarPilihan: gambarPilihan,
+    gambarSoal: gambarSoal, gambarPilihan: gambarPilihan, gambarGabung: gambarGabung,
     gambarPembahasan: gambarPembahasan, lembar: lembar,
-    blokSoal: blokSoal, blokPilihan: blokPilihan,
+    blokSoal: blokSoal, blokPilihan: blokPilihan, blokGabung: blokGabung,
     skalaSoal: skalaSoal, semuaBentuk: semuaBentuk, penggalTeks: penggalTeks
   };
 });

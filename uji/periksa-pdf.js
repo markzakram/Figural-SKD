@@ -39,8 +39,14 @@ var salahUkuran = kotak.filter(function (m) {
 console.log('   halaman           : ' + halaman);
 console.log('   ukuran 1440x810   : ' + (kotak.length - salahUkuran) + '/' + kotak.length);
 cek('semua halaman 1440x810', salahUkuran === 0, salahUkuran + ' halaman berukuran lain');
-cek('halaman kelipatan 4', halaman % 4 === 0, halaman + ' halaman, tidak habis dibagi 4');
-console.log('   ' + (halaman / 4) + ' soal x 4 halaman');
+/*
+ * Jumlah halaman per soal TIDAK selalu empat. Submateri kesesuaian mencetak
+ * gambar acuan dan kelima opsinya pada satu halaman, sehingga soalnya hanya
+ * memakai tiga. Yang diperiksa karena itu bukan kelipatan empat, melainkan
+ * bahwa jumlah halamannya konsisten dengan jumlah soal yang terbaca.
+ */
+cek('halaman kelipatan 3 atau 4', halaman % 3 === 0 || halaman % 4 === 0,
+  halaman + ' halaman, tidak habis dibagi 3 maupun 4');
 console.log('   ukuran berkas     : ' + (mentah.length / 1048576).toFixed(2) + ' MB (' +
   (mentah.length / Math.max(1, halaman / 4) / 1024).toFixed(0) + ' KB per soal)');
 
@@ -55,9 +61,11 @@ try {
 
 if (teks) {
   var blok = teks.split(/\bNo\.\s+\d+\b/).slice(1);
-  console.log('   blok soal terbaca : ' + blok.length);
-  cek('jumlah blok soal', blok.length === halaman / 4,
-    blok.length + ' blok untuk ' + (halaman / 4) + ' soal');
+  var perSoal = blok.length ? halaman / blok.length : 0;
+  console.log('   blok soal terbaca : ' + blok.length +
+    (perSoal ? '  (' + perSoal + ' halaman per soal)' : ''));
+  cek('halaman per soal bulat', perSoal === 3 || perSoal === 4,
+    halaman + ' halaman untuk ' + blok.length + ' soal = ' + perSoal.toFixed(2) + ' per soal');
 
   var tanpaJawaban = 0, alasanKembar = 0, tanpaOpsi = 0;
   blok.forEach(function (b, i) {

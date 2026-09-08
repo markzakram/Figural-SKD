@@ -350,8 +350,12 @@
     return {
       soal: s,
       lembarSvg: Sheet.lembar(s, { tampilKunci: false, sisi: 108, lebar: 520 }),
-      soalSvg: Sheet.gambarSoal(s, { sisi: 150 }),
-      pilihanSvg: Sheet.gambarPilihan(s, { sisi: 150 }),
+      // Kesesuaian dicetak dengan acuan dan kelima opsinya pada SATU halaman —
+      // gambar acuannya cuma satu kotak, jadi muat berdampingan, dan penjawab
+      // tidak perlu membalik halaman untuk membandingkan.
+      gabungSvg: s.tipe === 'kesesuaian' ? Sheet.gambarGabung(s, { sisi: 150 }) : null,
+      soalSvg: s.tipe === 'kesesuaian' ? null : Sheet.gambarSoal(s, { sisi: 150 }),
+      pilihanSvg: s.tipe === 'kesesuaian' ? null : Sheet.gambarPilihan(s, { sisi: 150 }),
       pembahasanSvg: Sheet.gambarPembahasan(s, { sisi: 170 }),
       huruf: s.jawabanHuruf,
       tipe: tipe ? tipe.label : s.tipe,
@@ -462,6 +466,11 @@
 
   // ---------------------------------------------------------------- ekspor
 
+  /** Jumlah halaman paket: 3 per soal bergambar gabungan, 4 untuk sisanya. */
+  function jumlahHalaman() {
+    return state.bank.reduce(function (n, b) { return n + (b.gabungSvg ? 3 : 4); }, 0);
+  }
+
   function namaBerkas(ext) {
     return 'soal-figural-' + state.bank.length + 'soal.' + ext;
   }
@@ -480,8 +489,9 @@
         tingkat: b.tingkat,
         jawaban: b.huruf,
         pembahasan: b.pembahasan,
-        gambarSoal: await ubah(b.soalSvg, 2),
-        gambarPilihan: await ubah(b.pilihanSvg, 2),
+        gambarGabung: b.gabungSvg ? await ubah(b.gabungSvg, 2) : null,
+        gambarSoal: b.soalSvg ? await ubah(b.soalSvg, 2) : null,
+        gambarPilihan: b.pilihanSvg ? await ubah(b.pilihanSvg, 2) : null,
         gambarPembahasan: b.pembahasanSvg ? await ubah(b.pembahasanSvg, 2) : null
       };
       // Ukuran huruf disamakan dengan yang dipilih PDF supaya berkas Word dan
@@ -505,7 +515,7 @@
       statusBatch('Memampatkan PDF…');
       var blob = await Pdf.buat(soal, {});
       Raster.unduhBlob(blob, namaBerkas('pdf'));
-      statusBatch('PDF siap: ' + (state.bank.length * 4) + ' halaman dari ' + state.bank.length +
+      statusBatch('PDF siap: ' + jumlahHalaman() + ' halaman dari ' + state.bank.length +
         ' soal (' + (blob.size / 1048576).toFixed(1) + ' MB).');
     } catch (e) {
       statusBatch('Ekspor PDF gagal: ' + e.message, true);
@@ -523,7 +533,7 @@
       statusBatch('Memampatkan berkas Word…');
       var blob = await Docx.buat(soal, {});
       Raster.unduhBlob(blob, namaBerkas('docx'));
-      statusBatch('Word siap: ' + (state.bank.length * 4) + ' halaman dari ' + state.bank.length +
+      statusBatch('Word siap: ' + jumlahHalaman() + ' halaman dari ' + state.bank.length +
         ' soal (' + (blob.size / 1048576).toFixed(1) + ' MB).');
     } catch (e) {
       statusBatch('Ekspor Word gagal: ' + e.message, true);

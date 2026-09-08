@@ -380,13 +380,17 @@
           { ukuran: 27, tebal: true, warna: WARNA_TINGKAT[s.tingkat] || WARNA_TINGKAT.Sedang }));
       }
 
-      /* --- halaman 2: gambar soal --- */
+      /* --- halaman 2: gambar soal, digabung dengan pilihannya bila ada --- */
       isi.push(pemisahHalaman());
-      isi.push(sisipkan(s.gambarSoal, ISI_LEBAR, ISI_TINGGI * 0.88, 'Soal ' + s.no));
-
-      /* --- halaman 3: pilihan A-E --- */
-      isi.push(pemisahHalaman());
-      isi.push(sisipkan(s.gambarPilihan, ISI_LEBAR, ISI_TINGGI * 0.88, 'Pilihan soal ' + s.no));
+      if (s.gambarGabung) {
+        // Kesesuaian: acuan dan kelima opsinya muat pada satu halaman.
+        isi.push(sisipkan(s.gambarGabung, ISI_LEBAR, ISI_TINGGI * 0.88, 'Soal ' + s.no));
+      } else {
+        isi.push(sisipkan(s.gambarSoal, ISI_LEBAR, ISI_TINGGI * 0.88, 'Soal ' + s.no));
+        /* --- halaman 3: pilihan A-E --- */
+        isi.push(pemisahHalaman());
+        isi.push(sisipkan(s.gambarPilihan, ISI_LEBAR, ISI_TINGGI * 0.88, 'Pilihan soal ' + s.no));
+      }
 
       /* --- halaman 4: kunci & pembahasan --- */
       isi.push(pemisahHalaman());
