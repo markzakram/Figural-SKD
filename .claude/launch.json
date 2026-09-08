@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "figural",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["uji/server.js", "8137"],
+      "port": 8137
+    }
+  ]
+}

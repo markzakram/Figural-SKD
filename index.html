@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generator Soal Figural &mdash; Kesesuaian, Ketidaksamaan, Analogi &amp; Serial</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <h1>Generator Soal Figural</h1>
+    <p class="sub">Pilih submateri &rarr; pilih keluarga bentuk &rarr; soal pilihan A&ndash;E + kunci &amp; pembahasan otomatis</p>
+  </div>
+  <div class="topbar-actions">
+    <button id="btn-help" class="ghost" type="button">Cara pakai</button>
+  </div>
+</header>
+
+<div id="help" class="help" hidden>
+  <ol>
+    <li><b>Pilih submateri.</b> Kesesuaian, Ketidaksamaan, Analogi, atau Serial &mdash; keempatnya mengikuti bab Figural pada modul.</li>
+    <li><b>Pilih keluarga bentuk.</b> Garis bersarang, bangun datar berpenanda, kisi titik, atau panah &amp; kait. Pilih <i>Campur</i> agar setiap soal memakai keluarga yang berbeda.</li>
+    <li><b>Acak bentuk.</b> Setiap bentuk lahir dari sebuah nomor benih; benih yang sama selalu menghasilkan bentuk yang sama, jadi soal bisa dibuat ulang persis dari nomornya.</li>
+    <li><b>Buat soal.</b> Program mengambil satu putaran sebagai kunci, lalu membuat pengecoh yang dijamin BUKAN putaran gambar acuan. Bayangan cermin selalu dihitung salah.</li>
+    <li><b>Buat sepaket dan unduh.</b> Isi jumlah soal, tekan <i>Generate</i>, lalu unduh PDF (siap cetak) atau Word (siap sunting).</li>
+  </ol>
+</div>
+
+<main class="layout">
+
+  <!-- ============ KIRI: PENGATURAN & BENTUK ============ -->
+  <section class="panel">
+    <h2><span class="step">1</span> Submateri</h2>
+    <div class="row wrap gap-s" id="tipe-picker"></div>
+    <p class="hint" id="tipe-perintah"></p>
+
+    <h2><span class="step">2</span> Keluarga bentuk</h2>
+    <div class="row wrap gap-s" id="keluarga-picker"></div>
+
+    <label class="field">
+      <span>Tingkat kesulitan</span>
+      <select id="tingkat">
+        <option value="mudah">Mudah &mdash; putaran 90/180/270&deg;, pengecoh mencolok</option>
+        <option value="sedang" selected>Sedang &mdash; kelipatan 45&deg;, campuran</option>
+        <option value="sulit">Sulit &mdash; 45/135/225/315&deg;, beda halus</option>
+      </select>
+    </label>
+
+    <h2><span class="step">3</span> Bentuk dasar
+      <span class="tip" title="Bentuk dibangkitkan dari nomor benih. Benih yang sama selalu menghasilkan bentuk yang sama.">?</span>
+    </h2>
+    <div class="row gap-s wrap">
+      <label class="num-field" title="Nomor benih bentuk">
+        <span>Benih</span>
+        <input type="number" id="benih" value="1001" min="0" step="1">
+      </label>
+      <button class="ghost" id="btn-acak-bentuk" type="button">Acak bentuk</button>
+    </div>
+
+    <div id="bentuk-view" class="bentuk-view"></div>
+
+    <h3>Unsur penyusun (<span id="unsur-count">0</span>)</h3>
+    <div id="unsur-list" class="unsur-list"></div>
+
+    <h3>Ukuran yang diperiksa</h3>
+    <dl class="ukur" id="ukur"></dl>
+    <p class="hint" id="bentuk-status"></p>
+  </section>
+
+  <!-- ============ TENGAH: SOAL ============ -->
+  <section class="panel wide">
+    <h2><span class="step">4</span> Soal &amp; pilihan jawaban</h2>
+
+    <div class="row gap-s wrap">
+      <button class="primary" id="btn-buat" type="button">Buat soal</button>
+      <button class="ghost" id="btn-soal-baru" type="button" title="Bentuk baru sekaligus soal baru">Soal berikutnya</button>
+      <label class="check">
+        <input type="checkbox" id="tampil-kunci">
+        Tandai kunci pada gambar
+      </label>
+    </div>
+
+    <div id="peringatan"></div>
+    <div id="lembar" class="sheet"></div>
+
+    <div id="jawab" class="answer" hidden>
+      <div class="row gap-s wrap center">
+        <span class="ans-label">Jawab:</span>
+        <span id="tombol-jawab" class="row gap-s"></span>
+      </div>
+      <p id="umpan" class="feedback"></p>
+      <p id="ungkap" class="reveal"></p>
+    </div>
+
+    <details class="bahas" id="bahas" hidden>
+      <summary>Kunci &amp; pembahasan</summary>
+      <ol id="bahas-isi"></ol>
+    </details>
+
+    <div class="quick" id="soal-aksi" hidden>
+      <button class="ghost" id="btn-png" type="button">Unduh PNG</button>
+      <button class="ghost" id="btn-svg" type="button">Unduh SVG</button>
+      <button class="ghost" id="btn-tambah" type="button">Tambah ke bank</button>
+    </div>
+  </section>
+
+  <!-- ============ KANAN: BANK SOAL ============ -->
+  <section class="panel wide">
+    <h2><span class="step">5</span> Buat banyak soal &amp; unduh
+      (<span id="bank-count">0</span> soal)
+    </h2>
+
+    <div class="row gap-s wrap batch">
+      <label class="num-field" title="Berapa soal yang dibuat sekaligus">
+        <span>Jumlah</span>
+        <input type="number" id="batch-jumlah" value="10" min="1" max="200">
+      </label>
+      <label class="num-field" title="Submateri untuk seluruh paket">
+        <span>Submateri</span>
+        <select id="batch-tipe">
+          <option value="ikut" selected>Ikuti pilihan di atas</option>
+          <option value="campur">Campuran keempatnya</option>
+        </select>
+      </label>
+      <label class="num-field" title="Keluarga bentuk untuk seluruh paket">
+        <span>Bentuk</span>
+        <select id="batch-keluarga">
+          <option value="ikut" selected>Ikuti pilihan di atas</option>
+          <option value="campur">Campur semua keluarga</option>
+        </select>
+      </label>
+      <label class="num-field" title="Tingkat kesulitan untuk seluruh paket">
+        <span>Tingkat</span>
+        <select id="batch-tingkat">
+          <option value="ikut" selected>Ikuti pilihan di atas</option>
+          <option value="campur">Campur ketiganya</option>
+        </select>
+      </label>
+      <button class="primary" id="btn-batch" type="button">Generate</button>
+    </div>
+
+    <div class="row gap-s wrap" style="margin-top:7px">
+      <button class="ghost" id="btn-pdf" type="button">Unduh PDF</button>
+      <button class="ghost" id="btn-docx" type="button">Unduh Word</button>
+      <button class="ghost" id="btn-cetak" type="button">Cetak</button>
+      <button class="ghost danger" id="btn-kosongkan" type="button">Kosongkan</button>
+    </div>
+
+    <progress id="batch-progress" value="0" max="100" hidden></progress>
+    <div class="status-line" id="batch-status"></div>
+    <div id="bank" class="bank"></div>
+  </section>
+
+</main>
+
+<div id="print-area" class="print-area"></div>
+
+<script src="js/rng.js"></script>
+<script src="js/figure.js"></script>
+<script src="js/families.js"></script>
+<script src="js/render.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/sheet.js"></script>
+<script src="js/raster.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/docx.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
